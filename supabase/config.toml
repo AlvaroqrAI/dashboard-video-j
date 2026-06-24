@@ -1,0 +1,43 @@
+project_id = "voice-dashboard"
+
+[functions.save-retell-key]
+verify_jwt = true
+
+[functions.retell-proxy]
+verify_jwt = true
+
+[functions.retell-agent]
+verify_jwt = true
+
+[functions.retell-phone-numbers]
+verify_jwt = true
+
+[functions.set-agent-webhook]
+verify_jwt = true
+
+# El webhook lo invoca Retell (sin JWT); la autenticidad se valida por firma HMAC.
+[functions.retell-webhook]
+verify_jwt = false
+
+[functions.create-checkout-session]
+verify_jwt = true
+
+[functions.client-billing]
+verify_jwt = true
+
+[functions.delete-client]
+verify_jwt = true
+
+[functions.send-alert]
+verify_jwt = true
+
+[functions.gmail-test]
+verify_jwt = true
+
+# El callback de OAuth lo invoca el navegador (redirección de Google), sin apikey.
+[functions.gmail-oauth-callback]
+verify_jwt = false
+
+# El webhook de Stripe no envía JWT: la autenticidad se valida por firma.
+[functions.stripe-webhook]
+verify_jwt = false

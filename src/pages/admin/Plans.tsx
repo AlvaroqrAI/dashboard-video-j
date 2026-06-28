@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Card, PageHeader } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/Card'
 import { invokeFunction } from '@/lib/supabase'
 
-// Precio de un producto de Stripe (importe en céntimos)
 interface StripePrice {
   id: string
   unit_amount: number
@@ -12,7 +11,6 @@ interface StripePrice {
   nickname: string | null
 }
 
-// Producto de Stripe con sus precios asociados
 interface StripeProduct {
   id: string
   name: string
@@ -20,311 +18,169 @@ interface StripeProduct {
   prices: StripePrice[]
 }
 
-// Respuesta de la acción 'list' de la Edge Function
 interface ListResponse {
   products: StripeProduct[]
 }
 
+const input: React.CSSProperties = {
+  width: '100%', background: '#0D0E14', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#F1F0F5',
+  fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+}
+
+const label: React.CSSProperties = {
+  fontSize: 10, fontWeight: 600, color: '#8B8A99', textTransform: 'uppercase',
+  letterSpacing: '0.1em', marginBottom: 6, display: 'block',
+}
+
+const btnPrimary: React.CSSProperties = {
+  background: '#7C6FE0', color: '#fff', border: 'none', borderRadius: 9,
+  padding: '9px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+  fontFamily: 'inherit',
+}
+
 export default function Plans() {
-  // Estado del listado de productos
   const [products, setProducts] = useState<StripeProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
-
-  // Estado del formulario de creación.
-  // Un producto puede tener cuota mensual, precio por minuto, o ambos.
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [monthlyAmount, setMonthlyAmount] = useState('')
   const [perMinuteAmount, setPerMinuteAmount] = useState('')
-
-  // Estado del envío del formulario
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [formSuccess, setFormSuccess] = useState<string | null>(null)
 
-  // Carga (o recarga) los productos desde Stripe
   async function fetchProducts() {
-    setLoading(true)
-    setListError(null)
+    setLoading(true); setListError(null)
     try {
-      const data = await invokeFunction<ListResponse>('stripe-products', {
-        action: 'list',
-      })
+      const data = await invokeFunction<ListResponse>('stripe-products', { action: 'list' })
       setProducts(data.products ?? [])
     } catch (err) {
-      setListError(
-        err instanceof Error ? err.message : 'No se pudieron cargar los productos.',
-      )
-    } finally {
-      setLoading(false)
-    }
+      setListError(err instanceof Error ? err.message : 'No se pudieron cargar los productos.')
+    } finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
+  useEffect(() => { void fetchProducts() }, [])
 
-  // Reinicia los campos del formulario
-  function resetForm() {
-    setName('')
-    setDescription('')
-    setMonthlyAmount('')
-    setPerMinuteAmount('')
-  }
+  function resetForm() { setName(''); setDescription(''); setMonthlyAmount(''); setPerMinuteAmount('') }
 
-  // Crea un nuevo producto en Stripe con cuota mensual y/o precio por minuto.
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const monthly = Number(monthlyAmount) || 0
     const perMinute = Number(perMinuteAmount) || 0
-    if (monthly <= 0 && perMinute <= 0) {
-      setFormError('Indica al menos un precio: mensual o por minuto.')
-      return
-    }
-    setSubmitting(true)
-    setFormError(null)
-    setFormSuccess(null)
+    if (monthly <= 0 && perMinute <= 0) { setFormError('Indica al menos un precio: mensual o por minuto.'); return }
+    setSubmitting(true); setFormError(null); setFormSuccess(null)
     try {
-      await invokeFunction('stripe-products', {
-        action: 'create',
-        name,
-        description,
-        monthlyAmount: monthly,
-        perMinuteAmount: perMinute,
-        currency: 'eur',
-      })
+      await invokeFunction('stripe-products', { action: 'create', name, description, monthlyAmount: monthly, perMinuteAmount: perMinute, currency: 'eur' })
       setFormSuccess('Producto creado correctamente.')
-      resetForm()
-      setShowForm(false)
+      resetForm(); setShowForm(false)
       await fetchProducts()
     } catch (err) {
-      setFormError(
-        err instanceof Error ? err.message : 'No se pudo crear el producto.',
-      )
-    } finally {
-      setSubmitting(false)
-    }
+      setFormError(err instanceof Error ? err.message : 'No se pudo crear el producto.')
+    } finally { setSubmitting(false) }
   }
 
-  // Archiva un producto en Stripe tras confirmación del usuario.
   async function handleDelete(productId: string) {
-    if (!window.confirm('¿Eliminar este producto? Se archivará en Stripe.')) {
-      return
-    }
-    setFormError(null)
-    setFormSuccess(null)
+    if (!window.confirm('¿Eliminar este producto? Se archivará en Stripe.')) return
+    setFormError(null); setFormSuccess(null)
     try {
-      await invokeFunction('stripe-products', {
-        action: 'archive',
-        productId,
-      })
+      await invokeFunction('stripe-products', { action: 'archive', productId })
       setFormSuccess('Producto eliminado.')
       await fetchProducts()
     } catch (err) {
-      setFormError(
-        err instanceof Error ? err.message : 'No se pudo eliminar el producto.',
-      )
+      setFormError(err instanceof Error ? err.message : 'No se pudo eliminar el producto.')
     }
   }
 
-  // Formatea el importe de un precio en la moneda correspondiente
   function formatPrice(price: StripePrice): string {
-    const formatted = (price.unit_amount / 100).toLocaleString('es-ES', {
-      style: 'currency',
-      currency: price.currency.toUpperCase(),
-    })
-    // Metered = precio por minuto; licensed recurrente = cuota mensual.
+    const formatted = (price.unit_amount / 100).toLocaleString('es-ES', { style: 'currency', currency: price.currency.toUpperCase() })
     if (price.usage_type === 'metered') return `${formatted}/min`
     return price.recurring_interval === 'month' ? `${formatted}/mes` : formatted
   }
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <PageHeader
         title="Planes y productos"
         subtitle="Gestiona los productos y precios de tu cuenta de Stripe"
+        action={
+          <button type="button" onClick={() => { setShowForm(v => !v); setFormError(null); setFormSuccess(null) }} style={btnPrimary}>
+            {showForm ? 'Cancelar' : '+ Nuevo producto'}
+          </button>
+        }
       />
 
-      {/* Cabecera con botón para mostrar/ocultar el formulario */}
-      <div className="mb-6 flex justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm((v) => !v)
-            setFormError(null)
-            setFormSuccess(null)
-          }}
-          className="bg-black px-5 py-3 text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-neutral-800"
-        >
-          {showForm ? 'Cancelar' : '+ Nuevo producto'}
-        </button>
-      </div>
-
-      {/* Formulario de creación */}
-      {showForm && (
-        <Card className="mb-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-black">
-                Nombre
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full border border-black bg-white px-3 py-2.5 text-sm outline-none focus:border-black focus:ring-0"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-black">
-                Descripción
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="w-full border border-black bg-white px-3 py-2.5 text-sm outline-none focus:border-black focus:ring-0"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-black">
-                  Precio mensual (€)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={monthlyAmount}
-                  onChange={(e) => setMonthlyAmount(e.target.value)}
-                  placeholder="Opcional"
-                  className="w-full border border-black bg-white px-3 py-2.5 text-sm outline-none focus:border-black focus:ring-0"
-                />
-                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-500">
-                  Cuota fija al mes
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-black">
-                  Precio por minuto (€)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={perMinuteAmount}
-                  onChange={(e) => setPerMinuteAmount(e.target.value)}
-                  placeholder="Opcional"
-                  className="w-full border border-black bg-white px-3 py-2.5 text-sm outline-none focus:border-black focus:ring-0"
-                />
-                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-neutral-500">
-                  Cobro por uso de minutos
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              Rellena uno de los dos o ambos. La lógica de Stripe se crea
-              automáticamente.
-            </p>
-
-            {/* Mensajes de éxito/error del formulario */}
-            {formError && (
-              <p className="border border-black bg-black px-3 py-2 text-xs font-bold uppercase tracking-wide text-white">
-                {formError}
-              </p>
-            )}
-            {formSuccess && (
-              <p className="text-xs font-bold uppercase tracking-wide text-black">
-                {formSuccess}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="bg-black px-5 py-3 text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {submitting ? 'Creando…' : 'Crear producto'}
-            </button>
-          </form>
-        </Card>
+      {formSuccess && (
+        <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 10, padding: '10px 16px', fontSize: 12, color: '#34D399' }}>{formSuccess}</div>
       )}
 
-      {/* Listado de productos */}
+      {showForm && (
+        <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#F1F0F5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Nuevo producto</div>
+          <form onSubmit={e => void handleSubmit(e)} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <span style={label}>Nombre</span>
+              <input style={input} required value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <span style={label}>Descripción</span>
+              <textarea style={{ ...input, resize: 'vertical' }} rows={3} value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <span style={label}>Precio mensual (€)</span>
+                <input style={input} type="number" step="0.01" min="0" value={monthlyAmount} onChange={e => setMonthlyAmount(e.target.value)} placeholder="Opcional" />
+              </div>
+              <div>
+                <span style={label}>Precio por minuto (€)</span>
+                <input style={input} type="number" step="0.01" min="0" value={perMinuteAmount} onChange={e => setPerMinuteAmount(e.target.value)} placeholder="Opcional" />
+              </div>
+            </div>
+            {formError && (
+              <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#F87171' }}>{formError}</div>
+            )}
+            <div>
+              <button type="submit" disabled={submitting} style={{ ...btnPrimary, opacity: submitting ? 0.5 : 1 }}>
+                {submitting ? 'Creando…' : 'Crear producto'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {loading ? (
-        <Card>
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Cargando…
-          </p>
-        </Card>
+        <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 32, fontSize: 12, color: '#4A4960' }}>Cargando…</div>
       ) : listError ? (
-        <Card>
-          <p className="border border-black bg-black px-3 py-2 text-xs font-bold uppercase tracking-wide text-white">
-            {listError}
-          </p>
-        </Card>
+        <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 10, padding: '14px 18px', fontSize: 13, color: '#F87171' }}>{listError}</div>
       ) : products.length === 0 ? (
-        <Card>
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Aún no hay productos en Stripe.
-          </p>
-        </Card>
+        <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 32, fontSize: 12, color: '#4A4960' }}>Aún no hay productos en Stripe.</div>
       ) : (
-        <div className="space-y-6">
-          {products.map((product) => (
-            <Card key={product.id}>
-              <div className="flex items-start justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-black">
-                  {product.name}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(product.id)}
-                  className="text-xs font-bold uppercase tracking-[0.1em] text-black underline underline-offset-4 hover:opacity-60"
-                >
-                  Eliminar
-                </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {products.map(product => (
+            <div key={product.id} style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#F1F0F5' }}>{product.name}</div>
+                <button type="button" onClick={() => void handleDelete(product.id)} style={{ background: 'none', border: 'none', fontSize: 12, fontWeight: 600, color: '#F87171', cursor: 'pointer', fontFamily: 'inherit' }}>Eliminar</button>
               </div>
               {product.description && (
-                <p className="mt-2 text-sm text-neutral-500">
-                  {product.description}
-                </p>
+                <div style={{ fontSize: 12, color: '#8B8A99', marginBottom: 16 }}>{product.description}</div>
               )}
-
-              <div className="mt-6 space-y-px bg-black">
-                {product.prices.map((price) => (
-                  <div
-                    key={price.id}
-                    className="flex items-center justify-between bg-white border border-black px-4 py-3"
-                  >
-                    <span className="text-sm font-bold text-black">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {product.prices.map(price => (
+                  <div key={price.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#34D399' }}>
                       {formatPrice(price)}
-                      {price.nickname && (
-                        <span className="ml-2 text-xs font-normal text-neutral-500">
-                          {price.nickname}
-                        </span>
-                      )}
+                      {price.nickname && <span style={{ fontSize: 11, fontWeight: 400, color: '#8B8A99', marginLeft: 8 }}>{price.nickname}</span>}
                     </span>
-                    {price.usage_type === 'metered' ? (
-                      <span className="border border-black bg-black px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white">
-                        Por minuto
-                      </span>
-                    ) : (
-                      <span className="border border-black bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-black">
-                        Mensual
-                      </span>
-                    )}
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '3px 10px', borderRadius: 6, background: price.usage_type === 'metered' ? 'rgba(124,111,224,0.12)' : 'rgba(52,211,153,0.1)', color: price.usage_type === 'metered' ? '#9B8FEF' : '#34D399', border: `1px solid ${price.usage_type === 'metered' ? 'rgba(155,143,239,0.3)' : 'rgba(52,211,153,0.3)'}` }}>
+                      {price.usage_type === 'metered' ? 'Por minuto' : 'Mensual'}
+                    </span>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}

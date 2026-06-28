@@ -32,23 +32,32 @@ function extractClientName(transcript: string | null): string {
 
 function extractCar(transcript: string | null): string {
   if (!transcript) return '—'
-  // Busca marca + modelo mencionados por el usuario
-  const carMatch = transcript.match(/(?:tengo (?:un |una )?|es (?:un |una )?)([A-ZÁÉÍÓÚÑA-Za-z][\w\s\-]{2,30})(?:,| de matrícula| matrícula| con)/i)
-  if (carMatch) return carMatch[1].trim()
-  // Marcas conocidas
-  const brands = ['Toyota', 'Volkswagen', 'Seat', 'Renault', 'Ford', 'BMW', 'Mercedes', 'Peugeot', 'Hyundai', 'Fiat', 'Lamborghini', 'Kia', 'Opel', 'Nissan', 'Audi', 'Skoda', 'Volvo']
-  for (const b of brands) {
-    const m = transcript.match(new RegExp(`${b}[\\s\\w\\-]{0,20}`, 'i'))
-    if (m) return m[0].trim()
+  // Buscar en líneas del usuario (User:) menciones de marca/modelo
+  const userLines = transcript.match(/User:\s*([^\n]+)/g) ?? []
+  const brands = ['Toyota', 'Volkswagen', 'VW', 'Seat', 'Renault', 'Ford', 'BMW', 'Mercedes', 'Peugeot', 'Hyundai', 'Fiat', 'Lamborghini', 'Kia', 'Opel', 'Nissan', 'Audi', 'Skoda', 'Volvo', 'Honda', 'Mazda', 'Suzuki', 'Citroën', 'Citroen']
+  for (const line of userLines) {
+    for (const b of brands) {
+      const m = line.match(new RegExp(`(${b}[\\s\\w\\-]{0,25})`, 'i'))
+      if (m) return m[1].trim().replace(/[.,].*$/, '').trim()
+    }
+    // Patrón genérico: "es un X" o "tengo un X" o "un X matrícula"
+    const generic = line.match(/(?:es un|es una|tengo un|tengo una|un|una)\s+([A-Za-záéíóúñÁÉÍÓÚÑ][\w\s\-]{2,25})(?:\s+(?:matr|con|,|de))/i)
+    if (generic) return generic[1].trim()
   }
   return '—'
 }
 
 function extractPlate(transcript: string | null): string {
   if (!transcript) return '—'
-  // Matrícula española: 4 números + 3 letras (dicho en texto como "dos uno siete cinco l v r")
-  const plateMatch = transcript.match(/matr[ií]cula\s+(?:es\s+)?([^.]+?)(?:\s*[.?]|\s+¿|\s+User|\s+Agent)/i)
-  if (plateMatch) return plateMatch[1].trim().slice(0, 30)
+  // Buscar la respuesta del usuario justo después de que el agente pida la matrícula
+  const plateBlock = transcript.match(/(?:matr[ií]cula[^]*?)User:\s*([^\n]{3,40})/i)
+  if (plateBlock) {
+    const candidate = plateBlock[1].trim()
+    // Descartar si parece una pregunta o frase larga sin datos
+    if (candidate.length < 40 && !candidate.startsWith('¿') && !candidate.toLowerCase().includes('no la') && !candidate.toLowerCase().includes('no me')) {
+      return candidate
+    }
+  }
   return '—'
 }
 

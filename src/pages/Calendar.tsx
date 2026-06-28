@@ -130,6 +130,22 @@ function ApptCard({ a, color }: { a: Appointment; color: { bg: string; color: st
               <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{plate}</div>
             </div>
           </div>
+          {a.transcript && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Transcripción</div>
+              <div style={{ maxHeight: 120, overflowY: 'auto', fontSize: 10, color: '#8B8A99', lineHeight: 1.6, background: 'rgba(0,0,0,0.2)', borderRadius: 6, padding: '8px 10px' }}>
+                {a.transcript.split(/(?=Agent:|User:)/).map((line, i) => {
+                  const isAgent = line.startsWith('Agent:')
+                  return (
+                    <div key={i} style={{ marginBottom: 4 }}>
+                      <span style={{ color: isAgent ? color.color : '#C4C3D0', fontWeight: 600, fontSize: 9 }}>{isAgent ? 'Sara' : 'Cliente'}: </span>
+                      <span>{line.replace(/^(Agent:|User:)\s*/, '')}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

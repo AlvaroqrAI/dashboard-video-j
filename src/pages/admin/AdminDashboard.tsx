@@ -5,7 +5,6 @@ import {
 } from 'recharts'
 import DateRangeFilter from '@/components/ui/DateRangeFilter'
 import { computeRangedMetrics, rangeLabel, type RangeState } from '@/lib/metrics'
-import { demoClients } from '@/lib/demo'
 import { supabase } from '@/lib/supabase'
 
 interface ClientRow {
@@ -14,16 +13,23 @@ interface ClientRow {
   full_name: string | null
 }
 
-function KpiCard({ label, value, color, badge, sub, icon }: {
+const SvgIcons: Record<string, React.ReactElement> = {
+  workshop: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
+  phone: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6.6 10.8a15.05 15.05 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.56.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02L6.6 10.8z"/></svg>,
+  euro: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8C15.5 6 13.5 5 11 5c-4 0-7 3-7 7s3 7 7 7c2.5 0 4.5-1 6-3"/><path d="M3 12h9M3 9h7"/></svg>,
+  trend: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+}
+
+function KpiCard({ label, value, color, badge, sub, iconKey }: {
   label: string; value: string | number; color: string
   badge: { text: string; bg: string; color: string }
-  sub: string; icon: string
+  sub: string; iconKey: string
 }) {
   return (
     <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 24, position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${color}44, transparent)` }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <span style={{ fontSize: 18 }}>{icon}</span>
+        <span style={{ color, opacity: 0.8 }}>{SvgIcons[iconKey]}</span>
       </div>
       <div style={{ fontSize: 11, fontWeight: 600, color: '#8B8A99', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: value.toString().length > 6 ? 22 : 28, fontWeight: 800, color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 8 }}>{value}</div>
@@ -46,6 +52,10 @@ export default function AdminDashboard() {
 
   const [clients, setClients] = useState<ClientRow[]>([])
   const [selectedClient, setSelectedClient] = useState<string>('all')
+  const [activeTallers, setActiveTallers] = useState(0)
+  const [totalCalls, setTotalCalls] = useState(0)
+  const [totalAppointments, setTotalAppointments] = useState(0)
+  const TICKET_AVG = 120 // € por cita estimada
 
   useEffect(() => {
     supabase
@@ -53,20 +63,53 @@ export default function AdminDashboard() {
       .select('id, email, full_name')
       .eq('role', 'client')
       .then(({ data }) => setClients((data ?? []) as ClientRow[]))
+
+    // Talleres activos (payment_method_added = true)
+    supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'client')
+      .eq('payment_method_added', true)
+      .then(({ count }) => setActiveTallers(count ?? 0))
+
+    // Total llamadas de todos los clientes
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }) => setTotalCalls(count ?? 0))
+
+    // Citas agendadas (para facturación potencial)
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_appointment', true)
+      .then(({ count }) => setTotalAppointments(count ?? 0))
   }, [])
 
-  const totalClients = demoClients.length
-  const activeClients = demoClients.filter((c) => c.status === 'active').length
-  const mrr = demoClients.reduce((s, c) => s + c.mrr, 0)
-  const paying = demoClients.filter((c) => c.mrr > 0).length
+  const mensual = totalAppointments * TICKET_AVG
+  const anual = mensual * 12
 
   const kpis = [
-    { label: 'Clientes totales', value: totalClients, color: '#9B8FEF', icon: '🏢', badge: { text: `${activeClients} activos`, bg: 'rgba(155,143,239,0.12)', color: '#9B8FEF' }, sub: 'talleres registrados en la plataforma' },
-    { label: 'Clientes activos', value: activeClients, color: '#34D399', icon: '✅', badge: { text: `${Math.round(activeClients / totalClients * 100)}% del total`, bg: 'rgba(52,211,153,0.12)', color: '#34D399' }, sub: 'con agente en funcionamiento' },
-    { label: `Llamadas · ${label}`, value: metrics.totalCalls.toLocaleString('es-ES'), color: '#9B8FEF', icon: '📞', badge: { text: 'en el periodo', bg: 'rgba(155,143,239,0.12)', color: '#9B8FEF' }, sub: 'gestionadas por todos los agentes' },
-    { label: 'MRR', value: `${mrr} €`, color: '#34D399', icon: '💰', badge: { text: 'ingresos recurrentes', bg: 'rgba(52,211,153,0.12)', color: '#34D399' }, sub: 'facturación mensual recurrente' },
-    { label: 'Clientes de pago', value: paying, color: '#FBBF24', icon: '⭐', badge: { text: 'con suscripción', bg: 'rgba(251,191,36,0.12)', color: '#FBBF24' }, sub: 'con método de pago activo' },
-    { label: 'ARR estimado', value: `${mrr * 12} €`, color: '#34D399', icon: '📈', badge: { text: 'proyección anual', bg: 'rgba(52,211,153,0.12)', color: '#34D399' }, sub: 'basado en MRR actual × 12' },
+    {
+      label: 'Talleres activos', value: activeTallers, color: '#9B8FEF', iconKey: 'workshop',
+      badge: { text: `${clients.length} registrados`, bg: 'rgba(155,143,239,0.12)', color: '#9B8FEF' },
+      sub: 'talleres con agente activo',
+    },
+    {
+      label: 'Llamadas gestionadas', value: totalCalls.toLocaleString('es-ES'), color: '#7C6FE0', iconKey: 'phone',
+      badge: { text: `${totalAppointments} citas`, bg: 'rgba(124,111,224,0.12)', color: '#7C6FE0' },
+      sub: 'total acumulado de todos los talleres',
+    },
+    {
+      label: 'Facturación pot. mensual', value: `${mensual.toLocaleString('es-ES')} €`, color: '#34D399', iconKey: 'euro',
+      badge: { text: `${totalAppointments} citas × ${TICKET_AVG} €`, bg: 'rgba(52,211,153,0.12)', color: '#34D399' },
+      sub: 'estimado por citas agendadas',
+    },
+    {
+      label: 'Facturación pot. anual', value: `${anual.toLocaleString('es-ES')} €`, color: '#34D399', iconKey: 'trend',
+      badge: { text: 'proyección × 12', bg: 'rgba(52,211,153,0.12)', color: '#34D399' },
+      sub: 'basado en el ritmo actual de citas',
+    },
   ]
 
   const tooltipStyle = {
@@ -140,7 +183,7 @@ export default function AdminDashboard() {
       )}
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         {kpis.map((k) => (
           <KpiCard key={k.label} {...k} />
         ))}

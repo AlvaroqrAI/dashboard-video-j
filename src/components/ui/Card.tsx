@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import React, { type ReactNode } from 'react'
 
 export function PageHeader({
   title,
@@ -31,14 +31,16 @@ export function PageHeader({
 export function Card({
   children,
   className = '',
+  style,
 }: {
   children: ReactNode
   className?: string
+  style?: React.CSSProperties
 }) {
   return (
     <div
       className={className}
-      style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}
+      style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20, ...style }}
     >
       {children}
     </div>

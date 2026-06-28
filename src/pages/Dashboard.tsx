@@ -1,3 +1,4 @@
+import React from 'react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -45,7 +46,7 @@ const REASON_COLORS: Record<string, string> = {
   'Consulta general': '#8B8A99',
 }
 
-const kpiCard = (color: string) => ({
+const kpiCard = (_color: string) => ({
   background: '#181922',
   border: `1px solid rgba(255,255,255,0.06)`,
   borderRadius: 20,
@@ -143,7 +144,7 @@ export default function Dashboard() {
 
   const tooltipStyle = { backgroundColor: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#F1F0F5', fontSize: 12 }
 
-  const kpiIcons: Record<string, (color: string) => JSX.Element> = {
+  const kpiIcons: Record<string, (color: string) => React.ReactElement> = {
     phone: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.6 10.8a15.05 15.05 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.56.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02L6.6 10.8z"/></svg>,
     moon: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
     calendar: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,

@@ -5,7 +5,7 @@ import { DEMO_MODE } from '@/lib/demo'
 import { invokeFunction } from '@/lib/supabase'
 
 export default function Onboarding() {
-  const { profile, markPaymentAdded, refreshProfile, signOut } = useAuth()
+  const { markPaymentAdded, refreshProfile, signOut } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const [loading, setLoading] = useState(false)

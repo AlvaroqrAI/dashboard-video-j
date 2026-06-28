@@ -49,13 +49,20 @@ function extractCar(transcript: string | null): string {
 
 function extractPlate(transcript: string | null): string {
   if (!transcript) return '—'
-  // Buscar la respuesta del usuario justo después de que el agente pida la matrícula
-  const plateBlock = transcript.match(/(?:matr[ií]cula[^]*?)User:\s*([^\n]{3,40})/i)
-  if (plateBlock) {
-    const candidate = plateBlock[1].trim()
-    // Descartar si parece una pregunta o frase larga sin datos
-    if (candidate.length < 40 && !candidate.startsWith('¿') && !candidate.toLowerCase().includes('no la') && !candidate.toLowerCase().includes('no me')) {
-      return candidate
+  // Dividir en turnos: ["Agent: ...", "User: ...", ...]
+  const turns = transcript.split(/(?=Agent:|User:)/).map(t => t.trim()).filter(Boolean)
+  for (let i = 0; i < turns.length - 1; i++) {
+    const isAgentAskingPlate = turns[i].startsWith('Agent:') && /matr[ií]cula/i.test(turns[i])
+    if (isAgentAskingPlate) {
+      // El siguiente turno del usuario tiene la matrícula
+      const userTurn = turns[i + 1]
+      if (userTurn.startsWith('User:')) {
+        const answer = userTurn.replace(/^User:\s*/, '').trim()
+        // Descartar respuestas que no son matrícula (muy cortas, preguntas, o "no la recuerdo")
+        if (answer.length > 2 && !answer.startsWith('¿') && !/no (la |me |tengo|recuerdo)/i.test(answer)) {
+          return answer.slice(0, 40)
+        }
+      }
     }
   }
   return '—'

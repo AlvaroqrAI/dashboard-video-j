@@ -47,6 +47,56 @@ function extractCar(transcript: string | null): string {
   return '—'
 }
 
+const NUM_MAP: Record<string, number> = {
+  cero:0, uno:1, una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9,
+  diez:10, once:11, doce:12, trece:13, catorce:14, quince:15,
+  dieciséis:16, dieciseis:16, diecisiete:17, dieciocho:18, diecinueve:19,
+  veinte:20, veintiuno:21, veintidós:22, veintidos:22, veintitrés:23, veintitres:23,
+  veinticuatro:24, veinticinco:25, veintiséis:26, veintiseis:26, veintisiete:27, veintiocho:28, veintinueve:29,
+  treinta:30, cuarenta:40, cincuenta:50, sesenta:60, setenta:70, ochenta:80, noventa:90,
+}
+
+function spokenToPlate(text: string): string {
+  // Separar letras del final (LVR, KLM, etc.)
+  const lettersMatch = text.match(/\b([A-Z]{2,3})\s*$/i)
+  const letters = lettersMatch ? lettersMatch[1].toUpperCase() : ''
+  const numPart = lettersMatch ? text.slice(0, lettersMatch.index).trim() : text
+
+  // Tokenizar y convertir números
+  const tokens = numPart.toLowerCase()
+    .replace(/\s+y\s+/g, ' ')
+    .split(/[\s,]+/)
+    .filter(Boolean)
+
+  const digits: number[] = []
+  let i = 0
+  while (i < tokens.length) {
+    const val = NUM_MAP[tokens[i]]
+    if (val !== undefined) {
+      // Si el siguiente token también es un número y juntos forman una decena+unidad
+      const next = NUM_MAP[tokens[i + 1]]
+      if (next !== undefined && val >= 20 && next < 10) {
+        digits.push(val + next)
+        i += 2
+      } else {
+        digits.push(val)
+        i++
+      }
+    } else {
+      // Puede ser una letra suelta (l, v, r) o algo no reconocido
+      const upper = tokens[i].toUpperCase()
+      if (/^[A-Z]$/.test(upper)) {
+        // letra individual → va al final como parte de la matrícula
+      }
+      i++
+    }
+  }
+
+  const numStr = digits.join('')
+  if (!numStr && !letters) return ''
+  return [numStr, letters].filter(Boolean).join(' ')
+}
+
 function extractPlate(transcript: string | null): string {
   if (!transcript) return '—'
   // Dividir en turnos: ["Agent: ...", "User: ...", ...]
@@ -60,7 +110,8 @@ function extractPlate(transcript: string | null): string {
         const answer = userTurn.replace(/^User:\s*/, '').trim()
         // Descartar respuestas que no son matrícula (muy cortas, preguntas, o "no la recuerdo")
         if (answer.length > 2 && !answer.startsWith('¿') && !/no (la |me |tengo|recuerdo)/i.test(answer)) {
-          return answer.slice(0, 40)
+          const converted = spokenToPlate(answer)
+          return converted || answer.slice(0, 40)
         }
       }
     }

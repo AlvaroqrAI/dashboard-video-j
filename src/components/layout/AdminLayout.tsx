@@ -3,12 +3,20 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Topbar from './Topbar'
 import { useAuth } from '@/context/AuthContext'
 
+const navIcons: Record<string, React.ReactElement> = {
+  metrics: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+  clients: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  agents: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.6 10.8a15.05 15.05 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.56.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02L6.6 10.8z"/></svg>,
+  plans: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  alerts: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+}
+
 const nav = [
-  { to: '/admin', label: 'Métricas globales', end: true },
-  { to: '/admin/clients', label: 'Clientes' },
-  { to: '/admin/agents', label: 'Agentes' },
-  { to: '/admin/plans', label: 'Planes y precios' },
-  { to: '/admin/alerts', label: 'Alertas' },
+  { to: '/admin', label: 'Métricas globales', end: true, iconKey: 'metrics' },
+  { to: '/admin/clients', label: 'Clientes', iconKey: 'clients' },
+  { to: '/admin/agents', label: 'Agentes', iconKey: 'agents' },
+  { to: '/admin/plans', label: 'Planes y precios', iconKey: 'plans' },
+  { to: '/admin/alerts', label: 'Alertas', iconKey: 'alerts' },
 ]
 
 export default function AdminLayout() {
@@ -69,7 +77,9 @@ export default function AdminLayout() {
                 fontSize: 12.5,
                 fontWeight: 500,
                 textDecoration: 'none',
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               } : {
                 color: '#8B8A99',
                 border: '1px solid transparent',
@@ -78,9 +88,12 @@ export default function AdminLayout() {
                 fontSize: 12.5,
                 fontWeight: 400,
                 textDecoration: 'none',
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
+              <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{navIcons[item.iconKey]}</span>
               {item.label}
             </NavLink>
           ))}

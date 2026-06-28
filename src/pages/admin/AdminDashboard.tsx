@@ -53,7 +53,6 @@ export default function AdminDashboard() {
   const [clients, setClients] = useState<ClientRow[]>([])
   const [selectedClient, setSelectedClient] = useState<string>('all')
   const [activeTallers, setActiveTallers] = useState(0)
-  const [totalCalls, setTotalCalls] = useState(0)
   const [totalAppointments, setTotalAppointments] = useState(0)
   const TICKET_AVG = 200 // € por cita estimada
 
@@ -64,7 +63,6 @@ export default function AdminDashboard() {
       .eq('role', 'client')
       .then(({ data }) => setClients((data ?? []) as ClientRow[]))
 
-    // Talleres activos (payment_method_added = true)
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
@@ -72,13 +70,6 @@ export default function AdminDashboard() {
       .eq('payment_method_added', true)
       .then(({ count }) => setActiveTallers(count ?? 0))
 
-    // Total llamadas de todos los clientes
-    supabase
-      .from('calls')
-      .select('id', { count: 'exact', head: true })
-      .then(({ count }) => setTotalCalls(count ?? 0))
-
-    // Citas agendadas (para facturación potencial)
     supabase
       .from('calls')
       .select('id', { count: 'exact', head: true })
@@ -86,6 +77,8 @@ export default function AdminDashboard() {
       .then(({ count }) => setTotalAppointments(count ?? 0))
   }, [])
 
+  // Llamadas reales ya disponibles en metrics (misma fuente que el gráfico)
+  const realCalls = metrics.totalCalls
   const mensual = totalAppointments * TICKET_AVG
   const anual = mensual * 12
 
@@ -96,7 +89,7 @@ export default function AdminDashboard() {
       sub: 'talleres con agente activo',
     },
     {
-      label: 'Llamadas gestionadas', value: totalCalls.toLocaleString('es-ES'), color: '#7C6FE0', iconKey: 'phone',
+      label: 'Llamadas gestionadas', value: realCalls.toLocaleString('es-ES'), color: '#7C6FE0', iconKey: 'phone',
       badge: { text: `${totalAppointments} citas`, bg: 'rgba(124,111,224,0.12)', color: '#7C6FE0' },
       sub: 'total acumulado de todos los talleres',
     },

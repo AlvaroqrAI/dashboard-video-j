@@ -210,7 +210,7 @@ function ApptCard({ a, color }: { a: Appointment; color: { bg: string; color: st
 
   return (
     <div ref={ref} onClick={() => setExpanded(v => !v)}
-      style={{ background: color.bg, border: `1px solid ${color.color}33`, borderRadius: 10, padding: '10px 12px', cursor: 'pointer', transition: 'all 0.15s', flex: '1 1 160px', minWidth: 160 }}>
+      style={{ background: color.bg, border: `1px solid ${color.color}33`, borderRadius: 10, padding: '10px 12px', cursor: 'pointer', transition: 'all 0.15s' }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: color.color, marginBottom: 3 }}>{fmtHour(a.start_timestamp)}</div>
       <div style={{ fontSize: 12, color: '#F1F0F5', fontWeight: 600 }}>{name}</div>
       <div style={{ fontSize: 10, color: '#8B8A99', marginTop: 2 }}>{reason}</div>
@@ -396,7 +396,7 @@ export default function Calendar() {
             {selected && selectedAppts.length === 0 && (
               <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '12px 0' }}>Sin citas este día</div>
             )}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {selectedAppts.map(a => {
                 const reason = extractReason(a.transcript, a.call_reason)
                 const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
@@ -409,7 +409,7 @@ export default function Calendar() {
           <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#F1F0F5', marginBottom: 12 }}>Próximas citas</div>
             {upcoming.length === 0 && <div style={{ fontSize: 11, color: '#4A4960' }}>Sin citas próximas</div>}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {upcoming.map(a => {
                 const reason = extractReason(a.transcript, a.call_reason)
                 const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']

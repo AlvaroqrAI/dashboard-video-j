@@ -10,18 +10,20 @@ export function PageHeader({
   action?: ReactNode
 }) {
   return (
-    <div className="mb-10 flex items-end justify-between border-b-2 border-black pb-6">
+    <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 20 }}>
       <div>
-        <h1 className="text-5xl font-black uppercase leading-[0.95] tracking-tighter text-black sm:text-6xl">
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.12em', display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+          <span style={{ width: 14, height: 2, background: '#7C6FE0', borderRadius: 1, display: 'inline-block' }} />
+          MecanIA
+        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#F1F0F5', letterSpacing: '-0.02em', margin: 0, lineHeight: 1.2 }}>
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-4 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-            {subtitle}
-          </p>
+          <p style={{ marginTop: 6, fontSize: 12, color: '#8B8A99' }}>{subtitle}</p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
     </div>
   )
 }
@@ -34,7 +36,10 @@ export function Card({
   className?: string
 }) {
   return (
-    <div className={`border border-neutral-300 bg-white p-6 ${className}`}>
+    <div
+      className={className}
+      style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}
+    >
       {children}
     </div>
   )
@@ -42,8 +47,8 @@ export function Card({
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <Card className="flex items-center justify-center py-20 text-xs font-medium uppercase tracking-[0.2em] text-neutral-400">
-      {message}
+    <Card style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem' } as React.CSSProperties}>
+      <p style={{ fontSize: 12, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{message}</p>
     </Card>
   )
 }

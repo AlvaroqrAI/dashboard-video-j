@@ -1,46 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Archivo', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, 'Segoe UI', sans-serif;
 
-  /* Paleta monocroma. Los nombres brand-* se reutilizan para que las clases
-     existentes (bg-brand-600, text-brand-700…) se vuelvan negro/gris sin reescribir. */
-  --color-brand-50: #f5f5f5;
-  --color-brand-100: #e5e5e5;
-  --color-brand-200: #d4d4d4;
-  --color-brand-400: #404040;
-  --color-brand-500: #171717;
-  --color-brand-600: #0a0a0a;
-  --color-brand-700: #000000;
+  /* MecanIA — paleta oscura premium */
+  --color-bg:       #0D0E14;
+  --color-bg1:      #12131A;
+  --color-bg2:      #181922;
+  --color-bg3:      #1E1F2B;
+  --color-bg4:      #252638;
+
+  --color-primary:  #7C6FE0;
+  --color-primary2: #9B8FEF;
+  --color-primary3: #C4BCFF;
+
+  --color-success:  #34D399;
+  --color-warning:  #FBBF24;
+  --color-danger:   #F87171;
+
+  --color-t1:       #F1F0F5;
+  --color-t2:       #8B8A99;
+  --color-t3:       #4A4960;
+
+  --color-border:   rgba(255,255,255,0.06);
+  --color-border2:  rgba(255,255,255,0.10);
+
+  /* Alias brand-* para que las clases del repo original sigan funcionando */
+  --color-brand-50:  #1E1F2B;
+  --color-brand-100: #252638;
+  --color-brand-200: #4A4960;
+  --color-brand-400: #8B8A99;
+  --color-brand-500: #9B8FEF;
+  --color-brand-600: #7C6FE0;
+  --color-brand-700: #6255C8;
 }
 
-html,
-body,
-#root {
+html, body, #root {
   height: 100%;
   margin: 0;
 }
 
 body {
-  background-color: #ffffff;
-  color: #0a0a0a;
+  background-color: #0D0E14;
+  color: #F1F0F5;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Estilo póster: retícula estricta → sin esquinas redondeadas ni sombras en
-   ningún elemento. El !important garantiza el look aunque queden clases sueltas. */
-:where(*, *::before, *::after) {
-  border-radius: 0 !important;
-}
-
+/* box-shadow permitido */
 * {
-  box-shadow: none !important;
+  box-shadow: revert !important;
 }
 
-/* Números tabulares para las métricas grandes. */
+/* Números tabulares para métricas */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Scrollbar elegante */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #12131A; }
+::-webkit-scrollbar-thumb { background: #252638; border-radius: 2px; }

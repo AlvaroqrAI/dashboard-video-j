@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import Topbar from './Topbar'
 import { useAuth } from '@/context/AuthContext'
 
@@ -22,8 +22,7 @@ export default function AdminLayout() {
     const match = nav.find((item) =>
       item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
     )
-    const label = match?.label ?? 'Admin'
-    document.title = `${label} · Admin · UmindsAI`
+    document.title = `${match?.label ?? 'Admin'} · Admin · MecanIA`
   }, [location.pathname])
 
   useEffect(() => {
@@ -43,24 +42,44 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-black bg-black">
-        <div className="flex h-16 items-center border-b border-neutral-800 px-6 text-lg font-black uppercase tracking-tighter text-white">
-          Admin · UmindsAI
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0D0E14' }}>
+      <aside style={{ width: 240, flexShrink: 0, background: '#12131A', borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Logo */}
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#F1F0F5' }}>
+            Mecan<span style={{ color: '#9B8FEF' }}>IA</span>
+          </span>
+          <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 600, background: 'rgba(124,111,224,0.15)', color: '#9B8FEF', border: '1px solid rgba(124,111,224,0.3)', borderRadius: 4, padding: '2px 6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Admin</span>
         </div>
-        <nav className="flex flex-1 flex-col gap-px p-3">
+
+        {/* Nav */}
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: 12 }}>
           {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) =>
-                `px-4 py-3 text-xs font-bold uppercase tracking-[0.15em] transition-colors ${
-                  isActive
-                    ? 'bg-white text-black'
-                    : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
-                }`
-              }
+              style={({ isActive }) => isActive ? {
+                background: 'rgba(124,111,224,0.12)',
+                color: '#C4BCFF',
+                border: '1px solid rgba(124,111,224,0.28)',
+                borderRadius: 8,
+                padding: '8px 12px',
+                fontSize: 12.5,
+                fontWeight: 500,
+                textDecoration: 'none',
+                display: 'block',
+              } : {
+                color: '#8B8A99',
+                border: '1px solid transparent',
+                borderRadius: 8,
+                padding: '8px 12px',
+                fontSize: 12.5,
+                fontWeight: 400,
+                textDecoration: 'none',
+                display: 'block',
+              }}
             >
               {item.label}
             </NavLink>
@@ -68,51 +87,33 @@ export default function AdminLayout() {
         </nav>
 
         {/* Usuario */}
-        <div ref={ref} className="relative border-t border-neutral-800">
+        <div ref={ref} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
           {open && (
-            <div className="absolute bottom-full left-0 right-0 border border-neutral-800 bg-neutral-900 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]">
-              <div className="flex items-center gap-3 border-b border-neutral-800 px-4 py-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-white text-xs font-black text-black">
-                  {initials}
-                </div>
-                <span className="truncate text-xs font-medium text-neutral-400">{user?.email}</span>
+            <div style={{ position: 'absolute', bottom: '100%', left: 0, right: 0, background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, marginBottom: 4, overflow: 'hidden' }}>
+              <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#7C6FE0,#C4BCFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>{initials}</div>
+                <span style={{ fontSize: 11, color: '#8B8A99', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
               </div>
-              <NavLink
-                to="/admin/settings"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-[0.15em] text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white"
-              >
+              <NavLink to="/admin/settings" onClick={() => setOpen(false)} style={{ display: 'block', padding: '9px 14px', fontSize: 12, color: '#F1F0F5', textDecoration: 'none' }}>
                 Ajustes
               </NavLink>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex w-full items-center gap-3 border-t border-neutral-800 px-4 py-3 text-xs font-bold uppercase tracking-[0.15em] text-neutral-300 transition-colors hover:bg-white hover:text-black"
-              >
+              <button type="button" onClick={handleSignOut} style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 12, color: '#F87171', background: 'none', border: 'none', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'inherit' }}>
                 Cerrar sesión
               </button>
             </div>
           )}
-
-          <button
-            type="button"
-            aria-label="Menú de usuario"
-            onClick={() => setOpen((v) => !v)}
-            className="flex w-full items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-800"
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-white text-xs font-black text-black">
-              {initials}
-            </div>
-            <span className="flex-1 truncate text-left text-xs font-medium text-neutral-400">
-              {user?.email}
-            </span>
-            <span className="text-xs text-neutral-600">···</span>
+          <button type="button" onClick={() => setOpen(v => !v)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#7C6FE0,#C4BCFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{initials}</div>
+            <span style={{ flex: 1, textAlign: 'left', fontSize: 11, color: '#8B8A99', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
+            <span style={{ fontSize: 12, color: '#4A4960' }}>···</span>
           </button>
         </div>
       </aside>
-      <div className="flex flex-1 flex-col overflow-hidden">
+
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
         <Topbar />
-        <main className="flex-1 overflow-y-auto bg-white p-6">
+        <main style={{ flex: 1, overflowY: 'auto', background: '#0D0E14', padding: '24px' }}>
           <Outlet />
         </main>
       </div>

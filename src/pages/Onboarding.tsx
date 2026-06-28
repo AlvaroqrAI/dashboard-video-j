@@ -12,7 +12,6 @@ export default function Onboarding() {
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
 
-  // Al volver de Stripe Checkout, esperamos a que el webhook marque el pago.
   useEffect(() => {
     if (params.get('checkout') !== 'success' || DEMO_MODE) return
     setConfirming(true)
@@ -24,83 +23,67 @@ export default function Onboarding() {
       if (p?.payment_method_added) {
         navigate('/', { replace: true })
       } else if (tries++ < 10) {
-        setTimeout(poll, 1500) // reintenta hasta ~15s
+        setTimeout(poll, 1500)
       } else {
         setConfirming(false)
-        setError(
-          'No pudimos confirmar el pago aún. Recarga en unos segundos o reinténtalo.',
-        )
+        setError('No pudimos confirmar el pago aún. Recarga en unos segundos.')
       }
     }
     void poll()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [params, refreshProfile, navigate])
 
   const addPaymentMethod = async () => {
     setError(null)
-    if (DEMO_MODE) {
-      markPaymentAdded()
-      navigate('/')
-      return
-    }
+    if (DEMO_MODE) { markPaymentAdded(); navigate('/'); return }
     setLoading(true)
     try {
-      // Sin priceId → Checkout en modo 'setup' (registrar tarjeta sin cobro).
-      const { url } = await invokeFunction<{ url: string }>(
-        'create-checkout-session',
-        {},
-      )
+      const { url } = await invokeFunction<{ url: string }>('create-checkout-session', {})
       if (!url) throw new Error('No se recibió la URL de Stripe.')
       window.location.href = url
     } catch (err) {
       setLoading(false)
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo abrir el checkout de Stripe.',
-      )
+      setError(err instanceof Error ? err.message : 'No se pudo abrir el checkout de Stripe.')
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md border-2 border-black bg-white p-10 text-center">
-        <h1 className="text-3xl font-black uppercase leading-[0.95] tracking-tighter text-black">
-          Añade un método de pago
+    <div style={{ minHeight: '100vh', background: '#0D0E14', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
+      <div style={{ width: '100%', maxWidth: 420, background: '#181922', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+
+        <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 300, height: 200, background: 'radial-gradient(rgba(124,111,224,0.2),transparent 65%)', pointerEvents: 'none' }} />
+
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔧</div>
+        <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F1F0F5', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
+          Activa tu cuenta
         </h1>
-        <p className="mt-4 text-xs font-medium uppercase tracking-[0.15em] leading-relaxed text-neutral-500">
-          Hola {profile?.full_name}. Para empezar a usar tus agentes de voz,
-          necesitas registrar un método de pago. La gestión es segura a través de
-          Stripe.
+        <p style={{ fontSize: '0.82rem', color: '#8B8A99', lineHeight: 1.6, marginBottom: '2rem' }}>
+          Para empezar a usar MecanIA necesitas añadir un método de pago. La gestión es segura a través de Stripe.
         </p>
 
         {confirming ? (
-          <p className="mt-8 text-xs font-bold uppercase tracking-[0.15em] text-black">
-            Confirmando tu pago…
-          </p>
+          <p style={{ fontSize: 12, color: '#9B8FEF' }}>Confirmando tu pago…</p>
         ) : (
           <button
             type="button"
             onClick={addPaymentMethod}
             disabled={loading}
-            className="mt-8 w-full bg-black py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition-colors hover:bg-neutral-800 disabled:opacity-40"
+            style={{ width: '100%', background: '#7C6FE0', color: '#fff', border: 'none', borderRadius: 9, padding: '0.85rem', fontSize: '0.95rem', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, fontFamily: 'inherit', boxShadow: '0 4px 20px rgba(124,111,224,0.3)' }}
           >
             {loading ? 'Abriendo Stripe…' : 'Añadir método de pago'}
           </button>
         )}
 
         {error && (
-          <p className="mt-4 border border-black bg-black px-3 py-2 text-xs font-medium uppercase tracking-wide text-white">
+          <div style={{ marginTop: '1rem', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, padding: '0.6rem', fontSize: '0.8rem', color: '#F87171' }}>
             {error}
-          </p>
+          </div>
         )}
 
         <button
           type="button"
           onClick={() => signOut()}
-          className="mt-4 text-xs font-medium uppercase tracking-[0.2em] text-neutral-400 hover:text-black"
+          style={{ marginTop: '1rem', background: 'none', border: 'none', color: '#4A4960', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'inherit' }}
         >
           Salir
         </button>

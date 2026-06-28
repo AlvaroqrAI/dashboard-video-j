@@ -8,7 +8,6 @@ const PRESETS: { key: RangePreset; label: string }[] = [
   { key: 'custom', label: 'Personalizado' },
 ]
 
-// Filtro de fecha reutilizable para los gráficos. Estilo blanco/negro del proyecto.
 export default function DateRangeFilter({
   value,
   onChange,
@@ -18,23 +17,15 @@ export default function DateRangeFilter({
 }) {
   function selectPreset(key: RangePreset) {
     if (key === 'custom') {
-      onChange({
-        preset: 'custom',
-        from: value.from ?? isoDaysAgo(7),
-        to: value.to ?? isoToday(),
-      })
+      onChange({ preset: 'custom', from: value.from ?? isoDaysAgo(7), to: value.to ?? isoToday() })
     } else {
       onChange({ preset: key })
     }
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div
-        className="flex flex-wrap gap-px border border-black bg-black"
-        role="group"
-        aria-label="Filtro de fecha"
-      >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 4 }} role="group" aria-label="Filtro de fecha">
         {PRESETS.map((p) => {
           const active = value.preset === p.key
           return (
@@ -43,11 +34,19 @@ export default function DateRangeFilter({
               type="button"
               onClick={() => selectPreset(p.key)}
               aria-pressed={active}
-              className={`px-4 py-2.5 text-xs font-bold uppercase tracking-[0.15em] transition-colors ${
-                active
-                  ? 'bg-black text-white'
-                  : 'bg-white text-neutral-500 hover:text-black'
-              }`}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 8,
+                border: '1px solid',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s',
+                background: active ? '#7C6FE0' : 'transparent',
+                borderColor: active ? '#7C6FE0' : 'rgba(255,255,255,0.1)',
+                color: active ? '#fff' : '#8B8A99',
+              }}
             >
               {p.label}
             </button>
@@ -56,33 +55,22 @@ export default function DateRangeFilter({
       </div>
 
       {value.preset === 'custom' && (
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-neutral-500">
-            Desde
-            <input
-              type="date"
-              aria-label="Fecha desde"
-              value={value.from ?? ''}
-              max={value.to}
-              onChange={(e) =>
-                onChange({ ...value, preset: 'custom', from: e.target.value })
-              }
-              className="border border-black bg-white px-3 py-2 text-xs text-black focus:outline-none"
-            />
-          </label>
-          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-neutral-500">
-            Hasta
-            <input
-              type="date"
-              aria-label="Fecha hasta"
-              value={value.to ?? ''}
-              min={value.from}
-              onChange={(e) =>
-                onChange({ ...value, preset: 'custom', to: e.target.value })
-              }
-              className="border border-black bg-white px-3 py-2 text-xs text-black focus:outline-none"
-            />
-          </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+          {[
+            { label: 'Desde', field: 'from' as const, max: value.to },
+            { label: 'Hasta', field: 'to' as const, min: value.from },
+          ].map(({ label, field, ...rest }) => (
+            <label key={field} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#8B8A99', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {label}
+              <input
+                type="date"
+                value={value[field] ?? ''}
+                {...rest}
+                onChange={(e) => onChange({ ...value, preset: 'custom', [field]: e.target.value })}
+                style={{ background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 10px', fontSize: 11, color: '#F1F0F5', fontFamily: 'inherit', outline: 'none', colorScheme: 'dark' }}
+              />
+            </label>
+          ))}
         </div>
       )}
     </div>

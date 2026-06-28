@@ -18,6 +18,7 @@ import Calls from '@/pages/Calls'
 import PhoneNumbers from '@/pages/PhoneNumbers'
 import Billing from '@/pages/Billing'
 import Settings from '@/pages/Settings'
+import Calendar from '@/pages/Calendar'
 
 // Admin
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -64,6 +65,7 @@ export default function App() {
                   <Route path="phone-numbers" element={<PhoneNumbers />} />
                   <Route path="billing" element={<Billing />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="calendar" element={<Calendar />} />
                 </Route>
               </Route>
             </Route>

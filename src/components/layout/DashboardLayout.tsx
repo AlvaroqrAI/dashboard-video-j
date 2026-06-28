@@ -4,10 +4,10 @@ import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 
 const pageTitles: Record<string, string> = {
-  '/': 'Resumen',
-  '/agents': 'Agentes de voz',
+  '/': 'Inicio',
+  '/agents': 'Mi Agente',
   '/calls': 'Llamadas',
-  '/phone-numbers': 'Números',
+  '/calendar': 'Calendario',
   '/billing': 'Facturación',
   '/settings': 'Ajustes',
 }
@@ -17,15 +17,15 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const label = pageTitles[location.pathname] ?? 'Dashboard'
-    document.title = `${label} · Voice Dashboard`
+    document.title = `${label} · MecanIA`
   }, [location.pathname])
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0D0E14' }}>
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
         <Topbar />
-        <main className="flex-1 overflow-y-auto bg-white p-6">
+        <main style={{ flex: 1, overflowY: 'auto', background: '#0D0E14', padding: '20px 24px' }}>
           <Outlet />
         </main>
       </div>

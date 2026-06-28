@@ -13,22 +13,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [resetMsg, setResetMsg] = useState<string | null>(null)
 
-  // Envía el correo de restablecimiento de contraseña (admin o cliente).
   const handleForgot = async () => {
     setError(null)
     setResetMsg(null)
-    if (!email) {
-      setError('Escribe tu email arriba y pulsa de nuevo.')
-      return
-    }
+    if (!email) { setError('Escribe tu email arriba y pulsa de nuevo.'); return }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
     if (error) setError(error.message)
-    else
-      setResetMsg(
-        'Si el email existe, te hemos enviado un enlace para restablecer la contraseña.',
-      )
+    else setResetMsg('Si el email existe, te hemos enviado un enlace para restablecer la contraseña.')
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -37,14 +30,9 @@ export default function Login() {
     setLoading(true)
     try {
       const profile = await signIn(email, password)
-      // Redirige según el rol devuelto por el backend.
-      if (profile.role === 'admin') {
-        navigate('/admin', { replace: true })
-      } else if (!profile.payment_method_added) {
-        navigate('/onboarding', { replace: true })
-      } else {
-        navigate('/', { replace: true })
-      }
+      if (profile.role === 'admin') navigate('/admin', { replace: true })
+      else if (!profile.payment_method_added) navigate('/onboarding', { replace: true })
+      else navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos.')
     } finally {
@@ -53,20 +41,23 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md border-2 border-black bg-white p-10">
-        <h1 className="text-5xl font-black uppercase leading-[0.9] tracking-tighter text-black">
-          Voice
-          <br />
-          Dashboard
-        </h1>
-        <p className="mt-4 mb-10 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-          Inicia sesión en tu cuenta
+    <div style={{ minHeight: '100vh', background: '#0D0E14', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
+      <div style={{ width: '100%', maxWidth: 420, background: '#181922', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2.5rem', position: 'relative', overflow: 'hidden' }}>
+
+        {/* Glow decorativo */}
+        <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 300, height: 200, background: 'radial-gradient(rgba(124,111,224,0.22),transparent 65%)', pointerEvents: 'none' }} />
+
+        {/* Logo */}
+        <div style={{ marginBottom: '0.3rem', fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#F1F0F5' }}>
+          Mecan<span style={{ color: '#9B8FEF' }}>IA</span>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: '#4A4960', marginBottom: '2rem' }}>
+          Panel de control · SRC Automoción
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-black">
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#8B8A99', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
               Email
             </label>
             <input
@@ -74,11 +65,11 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-black bg-white px-3 py-2.5 text-sm outline-none focus:border-black focus:ring-0"
+              style={{ width: '100%', background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, color: '#F1F0F5', padding: '0.75rem 1rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
           <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-[0.15em] text-black">
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#8B8A99', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
               Contraseña
             </label>
             <input
@@ -86,62 +77,64 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-black bg-white px-3 py-2.5 text-sm outline-none focus:border-black focus:ring-0"
+              style={{ width: '100%', background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, color: '#F1F0F5', padding: '0.75rem 1rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
 
           {error && (
-            <p className="border border-black bg-black px-3 py-2 text-xs font-medium uppercase tracking-wide text-white">
+            <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: '#F87171' }}>
               {error}
-            </p>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition-colors hover:bg-neutral-800 disabled:opacity-40"
+            style={{ width: '100%', background: '#7C6FE0', color: '#fff', border: 'none', borderRadius: 9, padding: '0.85rem', fontSize: '0.95rem', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, boxShadow: '0 4px 20px rgba(124,111,224,0.3)', fontFamily: 'inherit' }}
           >
-            {loading ? 'Accediendo…' : 'Entrar'}
+            {loading ? 'Accediendo…' : 'Entrar →'}
           </button>
 
           <button
             type="button"
             onClick={handleForgot}
-            className="w-full text-center text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400 hover:text-black"
+            style={{ background: 'none', border: 'none', color: '#4A4960', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             ¿Olvidaste tu contraseña?
           </button>
 
           {resetMsg && (
-            <p className="text-xs font-medium uppercase tracking-wide text-black">
-              {resetMsg}
-            </p>
+            <p style={{ fontSize: '0.75rem', color: '#34D399' }}>{resetMsg}</p>
           )}
         </form>
 
         {DEMO_MODE && (
-          <div className="mt-8 border-t-2 border-black pt-6">
-            <p className="mb-3 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+          <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.2rem' }}>
+            <p style={{ textAlign: 'center', fontSize: '0.7rem', color: '#4A4960', marginBottom: '0.75rem' }}>
               Modo demo — entra sin credenciales
             </p>
-            <div className="flex gap-px bg-black">
+            <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
                 onClick={() => { demoLogin('admin'); navigate('/admin') }}
-                className="flex-1 bg-black py-3 text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-neutral-800"
+                style={{ flex: 1, background: '#7C6FE0', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Admin
               </button>
               <button
                 type="button"
                 onClick={() => { demoLogin('client'); navigate('/') }}
-                className="flex-1 bg-white py-3 text-xs font-bold uppercase tracking-[0.15em] text-black hover:bg-neutral-100"
+                style={{ flex: 1, background: '#1E1F2B', color: '#F1F0F5', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.7rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Cliente
               </button>
             </div>
           </div>
         )}
+
+        <p style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: '#4A4960', textAlign: 'center' }}>
+          🔒 Acceso seguro · Tus datos están cifrados
+        </p>
       </div>
     </div>
   )

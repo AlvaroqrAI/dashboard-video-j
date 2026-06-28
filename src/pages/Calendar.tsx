@@ -106,6 +106,32 @@ function spokenToPlate(text: string): string {
   return [numStr, letters].filter(Boolean).join(' ')
 }
 
+function extractPhone(transcript: string | null): string {
+  if (!transcript) return '—'
+  const turns = transcript.split(/(?=Agent:|User:)/).map(t => t.trim()).filter(Boolean)
+  for (let i = 0; i < turns.length - 1; i++) {
+    const isAgentAskingPhone = turns[i].startsWith('Agent:') &&
+      /tel[eé]fono|contacto|localizar|número/i.test(turns[i])
+    if (isAgentAskingPhone) {
+      const userTurn = turns[i + 1]
+      if (userTurn.startsWith('User:')) {
+        const answer = userTurn.replace(/^User:\s*/, '').trim()
+        if (answer.length > 2 && !answer.startsWith('¿') && !/inaudible/i.test(answer)) {
+          const converted = spokenToPlate(answer)
+          const digitsOnly = converted.replace(/\s/g, '')
+          // Validar que parece un teléfono español (9 dígitos empezando por 6, 7 o 9)
+          if (/^[679]\d{8}$/.test(digitsOnly)) {
+            return digitsOnly.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')
+          }
+          // Si no convierte bien, devolver el texto hablado
+          if (answer.length < 60) return answer
+        }
+      }
+    }
+  }
+  return '—'
+}
+
 function extractPlate(transcript: string | null): string {
   if (!transcript) return '—'
   // Dividir en turnos: ["Agent: ...", "User: ...", ...]
@@ -179,6 +205,7 @@ function ApptCard({ a, color }: { a: Appointment; color: { bg: string; color: st
   const reason = extractReason(a.transcript, a.call_reason)
   const car = extractCar(a.transcript)
   const plate = extractPlate(a.transcript)
+  const phone = extractPhone(a.transcript)
 
   return (
     <div ref={ref} onClick={() => setExpanded(v => !v)}
@@ -188,10 +215,14 @@ function ApptCard({ a, color }: { a: Appointment; color: { bg: string; color: st
       <div style={{ fontSize: 10, color: '#8B8A99', marginTop: 2 }}>{reason}</div>
       {expanded && (
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${color.color}33` }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
             <div>
               <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cliente</div>
               <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{name}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Teléfono</div>
+              <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{phone}</div>
             </div>
             <div>
               <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Motivo</div>

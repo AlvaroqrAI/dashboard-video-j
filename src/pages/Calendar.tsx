@@ -119,12 +119,10 @@ function extractPhone(transcript: string | null): string {
         if (answer.length > 2 && !answer.startsWith('¿') && !/inaudible/i.test(answer)) {
           const converted = spokenToPlate(answer)
           const digitsOnly = converted.replace(/\s/g, '')
-          // Validar que parece un teléfono español (9 dígitos empezando por 6, 7 o 9)
-          if (/^[679]\d{8}$/.test(digitsOnly)) {
-            return digitsOnly.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')
+          if (digitsOnly.length >= 7) {
+            // Formatear en grupos de 3
+            return digitsOnly.replace(/(\d{3})(?=\d)/g, '$1 ').trim()
           }
-          // Si no convierte bien, devolver el texto hablado
-          if (answer.length < 60) return answer
         }
       }
     }
@@ -146,7 +144,10 @@ function extractPlate(transcript: string | null): string {
         // Descartar respuestas que no son matrícula (muy cortas, preguntas, o "no la recuerdo")
         if (answer.length > 2 && !answer.startsWith('¿') && !/no (la |me |tengo|recuerdo)/i.test(answer)) {
           const converted = spokenToPlate(answer)
-          return converted || answer.slice(0, 40)
+          // Solo usar conversión si tiene dígitos (matrícula real)
+          if (converted && /\d/.test(converted)) return converted
+          // Si solo hay letras (ej: "ele uve erre") devolver en mayúsculas
+          return answer.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim().slice(0, 20) || answer.slice(0, 20)
         }
       }
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 
@@ -25,9 +25,31 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 
 function extractClientName(transcript: string | null): string {
   if (!transcript) return 'Cliente'
-  const match = transcript.match(/(?:mi nombre es|me llamo|soy)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/i)
-  if (match) return match[1]
+  const match = transcript.match(/(?:mi nombre es|me llamo|soy)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})/i)
+  if (match) return match[1].trim()
   return 'Cliente'
+}
+
+function extractCar(transcript: string | null): string {
+  if (!transcript) return '—'
+  // Busca marca + modelo mencionados por el usuario
+  const carMatch = transcript.match(/(?:tengo (?:un |una )?|es (?:un |una )?)([A-ZÁÉÍÓÚÑA-Za-z][\w\s\-]{2,30})(?:,| de matrícula| matrícula| con)/i)
+  if (carMatch) return carMatch[1].trim()
+  // Marcas conocidas
+  const brands = ['Toyota', 'Volkswagen', 'Seat', 'Renault', 'Ford', 'BMW', 'Mercedes', 'Peugeot', 'Hyundai', 'Fiat', 'Lamborghini', 'Kia', 'Opel', 'Nissan', 'Audi', 'Skoda', 'Volvo']
+  for (const b of brands) {
+    const m = transcript.match(new RegExp(`${b}[\\s\\w\\-]{0,20}`, 'i'))
+    if (m) return m[0].trim()
+  }
+  return '—'
+}
+
+function extractPlate(transcript: string | null): string {
+  if (!transcript) return '—'
+  // Matrícula española: 4 números + 3 letras (dicho en texto como "dos uno siete cinco l v r")
+  const plateMatch = transcript.match(/matr[ií]cula\s+(?:es\s+)?([^.]+?)(?:\s*[.?]|\s+¿|\s+User|\s+Agent)/i)
+  if (plateMatch) return plateMatch[1].trim().slice(0, 30)
+  return '—'
 }
 
 function extractReason(transcript: string | null, callReason?: string | null): string {
@@ -63,6 +85,55 @@ const COLOR_BY_REASON: Record<string, { bg: string; color: string }> = {
   'Consulta precio':{ bg: 'rgba(34,211,238,0.15)',  color: '#67E8F9' },
   'Consulta horario':{ bg: 'rgba(251,191,36,0.15)', color: '#FDE68A' },
   'Consulta general':{ bg: 'rgba(52,211,153,0.15)', color: '#6EE7B7' },
+}
+
+function ApptCard({ a, color }: { a: Appointment; color: { bg: string; color: string } }) {
+  const [expanded, setExpanded] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setExpanded(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const name = extractClientName(a.transcript)
+  const reason = extractReason(a.transcript, a.call_reason)
+  const car = extractCar(a.transcript)
+  const plate = extractPlate(a.transcript)
+
+  return (
+    <div ref={ref} onClick={() => setExpanded(v => !v)}
+      style={{ background: color.bg, border: `1px solid ${color.color}33`, borderRadius: 10, padding: '10px 12px', cursor: 'pointer', transition: 'all 0.15s', flex: '1 1 160px', minWidth: 160 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: color.color, marginBottom: 3 }}>{fmtHour(a.start_timestamp)}</div>
+      <div style={{ fontSize: 12, color: '#F1F0F5', fontWeight: 600 }}>{name}</div>
+      <div style={{ fontSize: 10, color: '#8B8A99', marginTop: 2 }}>{reason}</div>
+      {expanded && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${color.color}33` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <div>
+              <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cliente</div>
+              <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{name}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Motivo</div>
+              <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{reason}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Vehículo</div>
+              <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{car}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Matrícula</div>
+              <div style={{ fontSize: 11, color: '#F1F0F5', fontWeight: 600 }}>{plate}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Calendar() {
@@ -203,15 +274,9 @@ export default function Calendar() {
             )}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {selectedAppts.map(a => {
-                const reason = a.call_reason ?? 'Pedir cita'
+                const reason = extractReason(a.transcript, a.call_reason)
                 const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
-                return (
-                  <div key={a.call_id} style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: 10, padding: '10px 12px', minWidth: 160, flex: '1 1 160px' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: s.color, marginBottom: 3 }}>{fmtHour(a.start_timestamp)}</div>
-                    <div style={{ fontSize: 12, color: '#F1F0F5', fontWeight: 600 }}>{getTitle(a)}</div>
-                    <div style={{ fontSize: 10, color: '#8B8A99', marginTop: 3 }}>{reason}</div>
-                  </div>
-                )
+                return <ApptCard key={a.call_id} a={a} color={s} />
               })}
             </div>
           </div>
@@ -220,24 +285,11 @@ export default function Calendar() {
           <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#F1F0F5', marginBottom: 12 }}>Próximas citas</div>
             {upcoming.length === 0 && <div style={{ fontSize: 11, color: '#4A4960' }}>Sin citas próximas</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {upcoming.map(a => {
-                const reason = a.call_reason ?? 'Pedir cita'
+                const reason = extractReason(a.transcript, a.call_reason)
                 const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
-                const d = new Date(a.start_timestamp)
-                return (
-                  <div key={a.call_id} style={{ display: 'flex', gap: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px' }}
-                    onClick={() => { setCurrent(new Date(d.getFullYear(), d.getMonth(), 1)); setSelected(d) }}>
-                    <div style={{ width: 34, flexShrink: 0, textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '4px 0' }}>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: s.color, lineHeight: 1 }}>{d.getDate()}</div>
-                      <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase' }}>{MONTHS[d.getMonth()].slice(0, 3)}</div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: '#C4C3D0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTitle(a)}</div>
-                      <div style={{ fontSize: 10, color: '#4A4960', marginTop: 2 }}>{fmtHour(a.start_timestamp)} · {reason}</div>
-                    </div>
-                  </div>
-                )
+                return <ApptCard key={a.call_id} a={a} color={s} />
               })}
             </div>
           </div>

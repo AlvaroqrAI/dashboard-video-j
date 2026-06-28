@@ -23,10 +23,34 @@ const DEMO_APPTS: Appointment[] = [
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-function getTitle(appt: Appointment): string {
-  if (appt.transcript) return appt.transcript.slice(0, 40)
-  if (appt.call_reason) return appt.call_reason
+function extractClientName(transcript: string | null): string {
+  if (!transcript) return 'Cliente'
+  const match = transcript.match(/(?:mi nombre es|me llamo|soy)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/i)
+  if (match) return match[1]
+  return 'Cliente'
+}
+
+function extractReason(transcript: string | null, callReason?: string | null): string {
+  if (callReason) return callReason
+  if (!transcript) return 'Cita agendada'
+  const t = transcript.toLowerCase()
+  if (t.includes('aceite') || t.includes('filtro')) return 'Cambio aceite/filtro'
+  if (t.includes('freno') || t.includes('pastilla')) return 'Frenos'
+  if (t.includes('itv')) return 'Revisión pre-ITV'
+  if (t.includes('revisión') || t.includes('revision') || t.includes('mantenimiento')) return 'Revisión / Mantenimiento'
+  if (t.includes('turbo')) return 'Reparación turbo'
+  if (t.includes('amortiguador')) return 'Amortiguadores'
+  if (t.includes('neumático') || t.includes('rueda') || t.includes('pincha')) return 'Neumáticos'
+  if (t.includes('diagnos') || t.includes('avería') || t.includes('trompicón') || t.includes('tirón')) return 'Diagnóstico / Avería'
+  if (t.includes('escape')) return 'Tubo de escape'
+  if (t.includes('luna')) return 'Sustitución luna'
   return 'Cita agendada'
+}
+
+function getTitle(appt: Appointment): string {
+  const name = extractClientName(appt.transcript)
+  const reason = extractReason(appt.transcript, appt.call_reason)
+  return `${name} · ${reason}`
 }
 
 function fmtHour(ts: string) {
@@ -107,13 +131,13 @@ export default function Calendar() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
 
         {/* Calendario principal */}
-        <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 20 }}>
+        <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 14 }}>
 
           {/* Header mes */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <button onClick={() => setCurrent(new Date(year, month - 1, 1))}
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', color: '#8B8A99', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#F1F0F5' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#F1F0F5' }}>
               {MONTHS[month]} {year}
             </div>
             <button onClick={() => setCurrent(new Date(year, month + 1, 1))}
@@ -137,14 +161,14 @@ export default function Calendar() {
               return (
                 <div key={i} onClick={() => setSelected(date)}
                   style={{
-                    minHeight: 72, padding: '6px 6px', borderRadius: 10, cursor: 'pointer',
+                    minHeight: 56, padding: '4px 5px', borderRadius: 8, cursor: 'pointer',
                     background: selected_ ? 'rgba(124,111,224,0.15)' : today_ ? 'rgba(124,111,224,0.07)' : 'transparent',
                     border: selected_ ? '1px solid rgba(124,111,224,0.4)' : today_ ? '1px solid rgba(124,111,224,0.2)' : '1px solid transparent',
                     transition: 'all 0.15s',
                   }}>
                   <div style={{
-                    width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: today_ ? 700 : 400,
+                    width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: today_ ? 700 : 400,
                     background: today_ ? '#7C6FE0' : 'transparent',
                     color: today_ ? '#fff' : date.getMonth() !== month ? '#2A2940' : '#C4C3D0',
                     marginBottom: 4,

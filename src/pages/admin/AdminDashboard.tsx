@@ -55,7 +55,7 @@ export default function AdminDashboard() {
   const [activeTallers, setActiveTallers] = useState(0)
   const [totalCalls, setTotalCalls] = useState(0)
   const [totalAppointments, setTotalAppointments] = useState(0)
-  const TICKET_AVG = 120 // € por cita estimada
+  const TICKET_AVG = 200 // € por cita estimada
 
   useEffect(() => {
     supabase

@@ -32,17 +32,26 @@ function extractClientName(transcript: string | null): string {
 
 function extractCar(transcript: string | null): string {
   if (!transcript) return '—'
-  // Buscar en líneas del usuario (User:) menciones de marca/modelo
-  const userLines = transcript.match(/User:\s*([^\n]+)/g) ?? []
-  const brands = ['Toyota', 'Volkswagen', 'VW', 'Seat', 'Renault', 'Ford', 'BMW', 'Mercedes', 'Peugeot', 'Hyundai', 'Fiat', 'Lamborghini', 'Kia', 'Opel', 'Nissan', 'Audi', 'Skoda', 'Volvo', 'Honda', 'Mazda', 'Suzuki', 'Citroën', 'Citroen']
+  const brands = ['Toyota', 'Volkswagen', 'VW', 'Seat', 'Renault', 'Ford', 'BMW', 'Mercedes', 'Peugeot', 'Hyundai', 'Fiat', 'Lamborghini', 'Kia', 'Opel', 'Nissan', 'Audi', 'Skoda', 'Volvo', 'Honda', 'Mazda', 'Suzuki', 'Citroën', 'Citroen', 'Dacia', 'Jeep', 'Mini']
+  // Paso 1: buscar marca en turnos del usuario
+  const userLines = transcript.match(/User:\s*([^]*?)(?=\s*(?:Agent:|User:|$))/g) ?? []
   for (const line of userLines) {
     for (const b of brands) {
-      const m = line.match(new RegExp(`(${b}[\\s\\w\\-]{0,25})`, 'i'))
-      if (m) return m[1].trim().replace(/[.,].*$/, '').trim()
+      const m = line.match(new RegExp(`(${b}[\\s\\w\\-]{0,20})`, 'i'))
+      if (m) {
+        return m[1].trim().replace(/[.,!\?].*$/, '').replace(/\s+matrícula.*$/i, '').trim()
+      }
     }
-    // Patrón genérico: "es un X" o "tengo un X" o "un X matrícula"
-    const generic = line.match(/(?:es un|es una|tengo un|tengo una|un|una)\s+([A-Za-záéíóúñÁÉÍÓÚÑ][\w\s\-]{2,25})(?:\s+(?:matr|con|,|de))/i)
-    if (generic) return generic[1].trim()
+  }
+  // Paso 2: buscar en líneas del agente que confirman el modelo ("un Toyota CHR", "un Fiat Panda")
+  const agentLines = transcript.match(/Agent:\s*([^]*?)(?=\s*(?:Agent:|User:|$))/g) ?? []
+  for (const line of agentLines) {
+    for (const b of brands) {
+      const m = line.match(new RegExp(`(?:un |una )(${b}[\\s\\w\\-]{0,20})`, 'i'))
+      if (m) {
+        return m[1].trim().replace(/[.,!\?].*$/, '').replace(/\s+(?:con|matr|correct).*$/i, '').trim()
+      }
+    }
   }
   return '—'
 }

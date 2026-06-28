@@ -128,7 +128,7 @@ export default function Calendar() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {/* Calendario principal */}
         <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 14 }}>
@@ -189,52 +189,57 @@ export default function Calendar() {
           </div>
         </div>
 
-        {/* Panel derecho */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Panel inferior — dos columnas */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
 
           {/* Citas del día seleccionado */}
-          <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 16, flex: selected ? 'none' : 1 }}>
+          <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#F1F0F5', marginBottom: 12 }}>
               {selected ? selected.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Selecciona un día'}
             </div>
+            {!selected && <div style={{ fontSize: 11, color: '#4A4960' }}>Haz clic en un día del calendario</div>}
             {selected && selectedAppts.length === 0 && (
-              <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '20px 0' }}>Sin citas este día</div>
+              <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '12px 0' }}>Sin citas este día</div>
             )}
-            {selectedAppts.map(a => {
-              const reason = a.call_reason ?? 'Pedir cita'
-              const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
-              return (
-                <div key={a.call_id} style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: 10, padding: '10px 12px', marginBottom: 8 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: s.color, marginBottom: 3 }}>{fmtHour(a.start_timestamp)}</div>
-                  <div style={{ fontSize: 12, color: '#F1F0F5', fontWeight: 600 }}>{getTitle(a)}</div>
-                  <div style={{ fontSize: 10, color: '#8B8A99', marginTop: 3 }}>{reason}</div>
-                </div>
-              )
-            })}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {selectedAppts.map(a => {
+                const reason = a.call_reason ?? 'Pedir cita'
+                const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
+                return (
+                  <div key={a.call_id} style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: 10, padding: '10px 12px', minWidth: 160, flex: '1 1 160px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: s.color, marginBottom: 3 }}>{fmtHour(a.start_timestamp)}</div>
+                    <div style={{ fontSize: 12, color: '#F1F0F5', fontWeight: 600 }}>{getTitle(a)}</div>
+                    <div style={{ fontSize: 10, color: '#8B8A99', marginTop: 3 }}>{reason}</div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           {/* Próximas citas */}
           <div style={{ background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#F1F0F5', marginBottom: 12 }}>Próximas citas</div>
             {upcoming.length === 0 && <div style={{ fontSize: 11, color: '#4A4960' }}>Sin citas próximas</div>}
-            {upcoming.map(a => {
-              const reason = a.call_reason ?? 'Pedir cita'
-              const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
-              const d = new Date(a.start_timestamp)
-              return (
-                <div key={a.call_id} style={{ display: 'flex', gap: 10, marginBottom: 10, cursor: 'pointer' }}
-                  onClick={() => { setCurrent(new Date(d.getFullYear(), d.getMonth(), 1)); setSelected(d) }}>
-                  <div style={{ width: 36, flexShrink: 0, textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '4px 0' }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: s.color, lineHeight: 1 }}>{d.getDate()}</div>
-                    <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase' }}>{MONTHS[d.getMonth()].slice(0, 3)}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+              {upcoming.map(a => {
+                const reason = a.call_reason ?? 'Pedir cita'
+                const s = COLOR_BY_REASON[reason] ?? COLOR_BY_REASON['Pedir cita']
+                const d = new Date(a.start_timestamp)
+                return (
+                  <div key={a.call_id} style={{ display: 'flex', gap: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px' }}
+                    onClick={() => { setCurrent(new Date(d.getFullYear(), d.getMonth(), 1)); setSelected(d) }}>
+                    <div style={{ width: 34, flexShrink: 0, textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '4px 0' }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: s.color, lineHeight: 1 }}>{d.getDate()}</div>
+                      <div style={{ fontSize: 9, color: '#4A4960', textTransform: 'uppercase' }}>{MONTHS[d.getMonth()].slice(0, 3)}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#C4C3D0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTitle(a)}</div>
+                      <div style={{ fontSize: 10, color: '#4A4960', marginTop: 2 }}>{fmtHour(a.start_timestamp)} · {reason}</div>
+                    </div>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#C4C3D0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getTitle(a)}</div>
-                    <div style={{ fontSize: 10, color: '#4A4960', marginTop: 2 }}>{fmtHour(a.start_timestamp)} · {reason}</div>
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
 
         </div>

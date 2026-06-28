@@ -53,6 +53,7 @@ export default function AdminDashboard() {
   const [clients, setClients] = useState<ClientRow[]>([])
   const [selectedClient, setSelectedClient] = useState<string>('all')
   const [activeTallers, setActiveTallers] = useState(0)
+  const [totalCalls, setTotalCalls] = useState<number | null>(null)
   const [totalAppointments, setTotalAppointments] = useState(0)
   const TICKET_AVG = 200 // € por cita estimada
 
@@ -73,12 +74,18 @@ export default function AdminDashboard() {
     supabase
       .from('calls')
       .select('id', { count: 'exact', head: true })
+      .then(({ count, error }) => {
+        if (!error && count !== null) setTotalCalls(count)
+      })
+
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
       .eq('is_appointment', true)
       .then(({ count }) => setTotalAppointments(count ?? 0))
   }, [])
 
-  // Llamadas reales ya disponibles en metrics (misma fuente que el gráfico)
-  const realCalls = metrics.totalCalls
+  const realCalls = totalCalls ?? 0
   const mensual = totalAppointments * TICKET_AVG
   const anual = mensual * 12
 

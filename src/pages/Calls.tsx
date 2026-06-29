@@ -68,12 +68,6 @@ function getMotivoConfig(transcript: string | null, callReason: string | null) {
   return null
 }
 
-function extractMotivo(transcript: string | null): string {
-  if (!transcript) return ''
-  const m = getMotivoConfig(transcript, null)
-  return m?.label ?? ''
-}
-
 function durationColor(ms: number | null) {
   if (!ms) return '#4A4960'
   const s = ms / 1000

@@ -41,3 +41,10 @@ verify_jwt = false
 # El webhook de Stripe no envía JWT: la autenticidad se valida por firma.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Tools de Retell para disponibilidad y agendado de citas (las llama Retell, sin JWT)
+[functions.check-availability]
+verify_jwt = false
+
+[functions.book-appointment]
+verify_jwt = false

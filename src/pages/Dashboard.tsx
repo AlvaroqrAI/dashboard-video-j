@@ -185,7 +185,6 @@ export default function Dashboard() {
 
       {/* Selector periodo */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-        {isDemo && <span style={{ fontSize: 10, color: '#FBBF24', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 6, padding: '3px 8px' }}>Datos demo — conecta Retell para datos reales</span>}
         {[7, 30, 90].map(d => (
           <button key={d} onClick={() => setDays(d)}
             style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',

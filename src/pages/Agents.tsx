@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Card, EmptyState, PageHeader } from '@/components/ui/Card'
 import { supabase, invokeFunction } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 
@@ -19,27 +18,20 @@ interface AgentPrompt {
   prompt: string
 }
 
-const btnCls =
-  'bg-black px-5 py-3 text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-neutral-800 disabled:opacity-40'
-
 export default function Agents() {
   const { user } = useAuth()
   const [agents, setAgents] = useState<AgentRow[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Editor de prompt
   const [editing, setEditing] = useState<AgentRow | null>(null)
   const [detail, setDetail] = useState<AgentPrompt | null>(null)
   const [draft, setDraft] = useState('')
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(
-    null,
-  )
+  const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null)
 
   useEffect(() => {
     if (!user) return
-    // RLS solo devuelve los agentes del propio cliente.
     supabase
       .from('agents')
       .select('id, retell_agent_id, name, status')
@@ -58,17 +50,11 @@ export default function Agents() {
     setFeedback(null)
     setLoadingDetail(true)
     try {
-      const d = await invokeFunction<AgentPrompt>('retell-agent', {
-        action: 'get',
-        agentId: a.id,
-      })
+      const d = await invokeFunction<AgentPrompt>('retell-agent', { action: 'get', agentId: a.id })
       setDetail(d)
       setDraft(d.prompt ?? '')
     } catch (e) {
-      setFeedback({
-        text: e instanceof Error ? e.message : 'No se pudo cargar el prompt.',
-        ok: false,
-      })
+      setFeedback({ text: e instanceof Error ? e.message : 'No se pudo cargar el prompt.', ok: false })
     } finally {
       setLoadingDetail(false)
     }
@@ -86,79 +72,66 @@ export default function Agents() {
     setSaving(true)
     setFeedback(null)
     try {
-      await invokeFunction('retell-agent', {
-        action: 'update-prompt',
-        agentId: editing.id,
-        prompt: draft,
-      })
-      setFeedback({ text: 'Prompt guardado.', ok: true })
+      await invokeFunction('retell-agent', { action: 'update-prompt', agentId: editing.id, prompt: draft })
+      setFeedback({ text: 'Prompt guardado correctamente.', ok: true })
     } catch (e) {
-      setFeedback({
-        text: e instanceof Error ? e.message : 'No se pudo guardar.',
-        ok: false,
-      })
+      setFeedback({ text: e instanceof Error ? e.message : 'No se pudo guardar.', ok: false })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Agentes de voz"
-        subtitle="Edita el prompt de los agentes activados en tu cuenta"
-      />
+    <div style={{ padding: '2rem' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: '#7C6FE0', textTransform: 'uppercase', marginBottom: 4 }}>MECANIA</p>
+        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F1F0F5', letterSpacing: '-0.02em' }}>Agentes de voz</h1>
+        <p style={{ fontSize: 13, color: '#4A4960', marginTop: 4 }}>Gestiona los agentes asignados a tu cuenta</p>
+      </div>
 
       {loading ? (
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-          Cargando…
-        </p>
+        <p style={{ fontSize: 12, color: '#4A4960', letterSpacing: '0.1em' }}>Cargando…</p>
       ) : agents.length === 0 ? (
-        <EmptyState message="Tu administrador aún no te ha asignado agentes." />
+        <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 12, padding: '2rem', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: '#4A4960' }}>Tu administrador aún no te ha asignado agentes.</p>
+        </div>
       ) : (
-        <Card className="p-0">
-          <table className="w-full text-sm">
+        <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 12, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr className="border-b-2 border-black text-left">
-                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500">
-                  Agente
-                </th>
-                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500">
-                  Agent ID
-                </th>
-                <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500">
-                  Estado
-                </th>
-                <th className="px-5 py-3"></th>
+              <tr style={{ borderBottom: '1px solid #2A2B35' }}>
+                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase' }}>Agente</th>
+                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase' }}>Agent ID</th>
+                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase' }}>Estado</th>
+                <th style={{ padding: '12px 20px' }} />
               </tr>
             </thead>
             <tbody>
               {agents.map((a) => (
-                <tr
-                  key={a.id}
-                  className="border-b border-neutral-200 last:border-0 hover:bg-neutral-50"
-                >
-                  <td className="px-5 py-4 font-bold text-black">{a.name}</td>
-                  <td className="px-5 py-4 font-mono text-xs text-neutral-500">
-                    {a.retell_agent_id || '—'}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`border border-black px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${
-                        a.status === 'active'
-                          ? 'bg-black text-white'
-                          : 'bg-white text-black'
-                      }`}
-                    >
+                <tr key={a.id} style={{ borderBottom: '1px solid #2A2B35' }}>
+                  <td style={{ padding: '16px 20px', fontWeight: 700, color: '#F1F0F5' }}>{a.name}</td>
+                  <td style={{ padding: '16px 20px', fontFamily: 'monospace', fontSize: 12, color: '#4A4960' }}>{a.retell_agent_id || '—'}</td>
+                  <td style={{ padding: '16px 20px' }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                      padding: '4px 10px', borderRadius: 6,
+                      background: a.status === 'active' ? 'rgba(124,111,224,0.15)' : 'rgba(74,73,96,0.2)',
+                      color: a.status === 'active' ? '#9B8FEF' : '#4A4960',
+                      border: `1px solid ${a.status === 'active' ? 'rgba(124,111,224,0.3)' : '#2A2B35'}`
+                    }}>
                       {a.status === 'active' ? 'Activo' : 'Pausado'}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-right">
+                  <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                     <button
                       type="button"
                       onClick={() => void openEditor(a)}
                       disabled={!a.retell_agent_id}
-                      className="text-xs font-bold uppercase tracking-[0.1em] text-black underline underline-offset-4 hover:opacity-60 disabled:opacity-30"
+                      style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                        color: '#7C6FE0', background: 'none', border: 'none', cursor: 'pointer', opacity: a.retell_agent_id ? 1 : 0.3
+                      }}
                     >
                       Editar prompt
                     </button>
@@ -167,73 +140,52 @@ export default function Agents() {
               ))}
             </tbody>
           </table>
-        </Card>
+        </div>
       )}
 
-      {/* Editor de prompt (overlay) */}
+      {/* Modal editor */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col border-2 border-black bg-white">
-            <div className="flex items-center justify-between border-b-2 border-black px-6 py-4">
-              <h2 className="text-sm font-bold uppercase tracking-[0.05em] text-black">
-                {detail?.agent_name || editing.name}
-              </h2>
-              <button
-                type="button"
-                onClick={closeEditor}
-                className="text-xs font-bold uppercase tracking-[0.1em] text-black underline underline-offset-4 hover:opacity-60"
-              >
-                Cerrar
-              </button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', padding: '1rem' }}>
+          <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 16, width: '100%', maxWidth: 760, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #2A2B35', padding: '1rem 1.5rem' }}>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: '#F1F0F5' }}>{detail?.agent_name || editing.name}</h2>
+              <button type="button" onClick={closeEditor} style={{ fontSize: 11, fontWeight: 700, color: '#4A4960', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Cerrar</button>
             </div>
 
-            <div className="overflow-y-auto px-6 py-5">
+            <div style={{ overflowY: 'auto', padding: '1.5rem' }}>
               {loadingDetail ? (
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-                  Cargando prompt…
-                </p>
+                <p style={{ fontSize: 12, color: '#4A4960' }}>Cargando prompt…</p>
               ) : detail && !detail.editable ? (
-                <p className="border border-black bg-neutral-50 px-3 py-3 text-xs text-neutral-700">
-                  Este agente usa un flujo de conversación ({detail.engine_type})
-                  y no tiene un prompt único editable desde aquí.
+                <p style={{ fontSize: 13, color: '#4A4960', background: '#0D0E14', border: '1px solid #2A2B35', borderRadius: 8, padding: '1rem' }}>
+                  Este agente usa un flujo de conversación ({detail.engine_type}) y no tiene un prompt único editable desde aquí.
                 </p>
               ) : detail ? (
                 <>
-                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500">
-                    Prompt del agente
-                  </label>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase', marginBottom: 8 }}>Prompt del agente</p>
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     rows={18}
-                    className="w-full resize-y border border-black bg-white p-3 font-mono text-xs leading-relaxed text-black outline-none focus:border-black"
+                    style={{ width: '100%', resize: 'vertical', background: '#0D0E14', border: '1px solid #2A2B35', borderRadius: 8, padding: '0.75rem', fontFamily: 'monospace', fontSize: 12, color: '#F1F0F5', outline: 'none', lineHeight: 1.6, boxSizing: 'border-box' }}
                   />
                 </>
               ) : (
-                <p className="border border-black bg-black px-3 py-2 text-xs font-bold uppercase tracking-wide text-white">
-                  {feedback?.text || 'No se pudo cargar el prompt.'}
-                </p>
+                <p style={{ fontSize: 12, color: '#EF4444' }}>{feedback?.text || 'No se pudo cargar el prompt.'}</p>
               )}
             </div>
 
             {detail?.editable && (
-              <div className="flex items-center gap-3 border-t-2 border-black px-6 py-4">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid #2A2B35', padding: '1rem 1.5rem' }}>
                 <button
                   type="button"
                   onClick={() => void savePrompt()}
                   disabled={saving}
-                  className={btnCls}
+                  style={{ background: '#7C6FE0', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}
                 >
                   {saving ? 'Guardando…' : 'Guardar cambios'}
                 </button>
                 {feedback && (
-                  <span
-                    className={`text-xs font-bold uppercase tracking-wide ${
-                      feedback.ok ? 'text-black' : 'text-red-600'
-                    }`}
-                  >
-                    {feedback.text}
-                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: feedback.ok ? '#7C6FE0' : '#EF4444' }}>{feedback.text}</span>
                 )}
               </div>
             )}

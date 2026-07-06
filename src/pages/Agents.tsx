@@ -18,10 +18,21 @@ interface AgentPrompt {
   prompt: string
 }
 
+interface Metrics {
+  total: number
+  citas: number
+  tasa: number
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
 export default function Agents() {
   const { user } = useAuth()
   const [agents, setAgents] = useState<AgentRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [metrics, setMetrics] = useState<Metrics>({ total: 0, citas: 0, tasa: 0 })
 
   const [editing, setEditing] = useState<AgentRow | null>(null)
   const [detail, setDetail] = useState<AgentPrompt | null>(null)
@@ -40,6 +51,17 @@ export default function Agents() {
       .then(({ data }) => {
         setAgents((data ?? []) as AgentRow[])
         setLoading(false)
+      })
+
+    supabase
+      .from('call_logs')
+      .select('call_id, is_appointment')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        const total = (data ?? []).length
+        const citas = (data ?? []).filter(c => c.is_appointment).length
+        const tasa = total > 0 ? Math.round((citas / total) * 100) : 0
+        setMetrics({ total, citas, tasa })
       })
   }, [user])
 
@@ -81,66 +103,82 @@ export default function Agents() {
     }
   }
 
+  const agent = agents[0]
+
   return (
     <div style={{ padding: '2rem' }}>
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: '#7C6FE0', textTransform: 'uppercase', marginBottom: 4 }}>MECANIA</p>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F1F0F5', letterSpacing: '-0.02em' }}>Agentes de voz</h1>
-        <p style={{ fontSize: 13, color: '#4A4960', marginTop: 4 }}>Gestiona los agentes asignados a tu cuenta</p>
+        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F1F0F5', letterSpacing: '-0.02em' }}>Mi Agente</h1>
+        <p style={{ fontSize: 13, color: '#4A4960', marginTop: 4 }}>Gestiona tu asistente de voz</p>
       </div>
 
       {loading ? (
-        <p style={{ fontSize: 12, color: '#4A4960', letterSpacing: '0.1em' }}>Cargando…</p>
-      ) : agents.length === 0 ? (
+        <p style={{ fontSize: 12, color: '#4A4960' }}>Cargando…</p>
+      ) : !agent ? (
         <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 12, padding: '2rem', textAlign: 'center' }}>
           <p style={{ fontSize: 13, color: '#4A4960' }}>Tu administrador aún no te ha asignado agentes.</p>
         </div>
       ) : (
-        <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 12, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #2A2B35' }}>
-                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase' }}>Agente</th>
-                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase' }}>Agent ID</th>
-                <th style={{ padding: '12px 20px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase' }}>Estado</th>
-                <th style={{ padding: '12px 20px' }} />
-              </tr>
-            </thead>
-            <tbody>
-              {agents.map((a) => (
-                <tr key={a.id} style={{ borderBottom: '1px solid #2A2B35' }}>
-                  <td style={{ padding: '16px 20px', fontWeight: 700, color: '#F1F0F5' }}>{a.name}</td>
-                  <td style={{ padding: '16px 20px', fontFamily: 'monospace', fontSize: 12, color: '#4A4960' }}>{a.retell_agent_id || '—'}</td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                      padding: '4px 10px', borderRadius: 6,
-                      background: a.status === 'active' ? 'rgba(124,111,224,0.15)' : 'rgba(74,73,96,0.2)',
-                      color: a.status === 'active' ? '#9B8FEF' : '#4A4960',
-                      border: `1px solid ${a.status === 'active' ? 'rgba(124,111,224,0.3)' : '#2A2B35'}`
-                    }}>
-                      {a.status === 'active' ? 'Activo' : 'Pausado'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      onClick={() => void openEditor(a)}
-                      disabled={!a.retell_agent_id}
-                      style={{
-                        fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                        color: '#7C6FE0', background: 'none', border: 'none', cursor: 'pointer', opacity: a.retell_agent_id ? 1 : 0.3
-                      }}
-                    >
-                      Editar prompt
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Avatar card */}
+          <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 16, padding: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            {/* Avatar */}
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 24, fontWeight: 800, color: '#fff', flexShrink: 0
+            }}>
+              {getInitials(agent.name)}
+            </div>
+            {/* Info */}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: '#F1F0F5', margin: 0 }}>{agent.name}</h2>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                  padding: '3px 8px', borderRadius: 6,
+                  background: agent.status === 'active' ? 'rgba(124,111,224,0.15)' : 'rgba(74,73,96,0.2)',
+                  color: agent.status === 'active' ? '#9B8FEF' : '#4A4960',
+                  border: `1px solid ${agent.status === 'active' ? 'rgba(124,111,224,0.3)' : '#2A2B35'}`
+                }}>
+                  {agent.status === 'active' ? '● Activo' : '● Pausado'}
+                </span>
+              </div>
+              <p style={{ fontSize: 12, color: '#4A4960', fontFamily: 'monospace', margin: 0 }}>{agent.retell_agent_id || '—'}</p>
+            </div>
+            {/* Editar prompt */}
+            <button
+              type="button"
+              onClick={() => void openEditor(agent)}
+              disabled={!agent.retell_agent_id}
+              style={{
+                background: 'rgba(124,111,224,0.1)', border: '1px solid rgba(124,111,224,0.3)',
+                borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700,
+                color: '#9B8FEF', cursor: 'pointer', letterSpacing: '0.05em'
+              }}
+            >
+              Editar prompt
+            </button>
+          </div>
+
+          {/* Métricas */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+            {[
+              { label: 'Llamadas totales', value: metrics.total, sub: 'desde el inicio' },
+              { label: 'Citas agendadas', value: metrics.citas, sub: 'confirmadas por el agente' },
+              { label: 'Tasa de conversión', value: `${metrics.tasa}%`, sub: 'llamadas → citas' },
+            ].map(m => (
+              <div key={m.label} style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 12, padding: '1.25rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#4A4960', textTransform: 'uppercase', marginBottom: 8 }}>{m.label}</p>
+                <p style={{ fontSize: 32, fontWeight: 800, color: '#9B8FEF', margin: '0 0 4px' }}>{m.value}</p>
+                <p style={{ fontSize: 11, color: '#4A4960', margin: 0 }}>{m.sub}</p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Modal editor */}
@@ -151,7 +189,6 @@ export default function Agents() {
               <h2 style={{ fontSize: 14, fontWeight: 700, color: '#F1F0F5' }}>{detail?.agent_name || editing.name}</h2>
               <button type="button" onClick={closeEditor} style={{ fontSize: 11, fontWeight: 700, color: '#4A4960', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Cerrar</button>
             </div>
-
             <div style={{ overflowY: 'auto', padding: '1.5rem' }}>
               {loadingDetail ? (
                 <p style={{ fontSize: 12, color: '#4A4960' }}>Cargando prompt…</p>
@@ -173,7 +210,6 @@ export default function Agents() {
                 <p style={{ fontSize: 12, color: '#EF4444' }}>{feedback?.text || 'No se pudo cargar el prompt.'}</p>
               )}
             </div>
-
             {detail?.editable && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid #2A2B35', padding: '1rem 1.5rem' }}>
                 <button

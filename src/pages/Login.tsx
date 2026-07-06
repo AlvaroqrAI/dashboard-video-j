@@ -52,7 +52,7 @@ export default function Login() {
           Mecan<span style={{ color: '#9B8FEF' }}>IA</span>
         </div>
         <p style={{ fontSize: '0.8rem', color: '#4A4960', marginBottom: '2rem' }}>
-          Panel de control · SRC Automoción
+          Panel de control
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

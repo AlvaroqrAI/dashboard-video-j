@@ -99,7 +99,7 @@ export default function Dashboard() {
   }, [user, days])
 
   const calls = rawCalls.length > 0 ? rawCalls : DEMO_CALLS
-  const isDemo = rawCalls.length === 0
+
 
   // KPIs
   const total = calls.length

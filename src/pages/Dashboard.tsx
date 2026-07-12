@@ -29,6 +29,19 @@ function fmtTime(ts: string) {
   return new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Fuera de horario: L-V 07:00–15:00 (hora de Madrid). Fin de semana = fuera.
+function isOutOfHours(ts: string): boolean {
+  if (!ts) return false
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Madrid', weekday: 'short', hour: '2-digit', hour12: false,
+  }).formatToParts(new Date(ts))
+  const weekday = parts.find(p => p.type === 'weekday')?.value ?? ''
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10)
+  const isWeekend = weekday === 'Sat' || weekday === 'Sun'
+  if (isWeekend) return true
+  return hour < 7 || hour >= 15
+}
+
 function detectReason(c: CallLog): string {
   if (c.is_appointment) return 'Pedir cita'
   const t = (c.transcript ?? '').toLowerCase()
@@ -114,7 +127,9 @@ export default function Dashboard() {
 
   // KPIs
   const total = calls.length
-  const fueraHorario = calls.filter(c => c.is_out_of_hours).length
+  const fueraHorario = isDemo
+    ? calls.filter(c => c.is_out_of_hours).length
+    : calls.filter(c => isOutOfHours(c.start_timestamp)).length
   // Citas: en datos reales, contar la tabla appointments; en demo, el flag de las llamadas demo
   const citas = isDemo ? calls.filter(c => c.is_appointment).length : citasReales
   const totalMs = calls.reduce((s, c) => s + (c.duration_ms || 0), 0)

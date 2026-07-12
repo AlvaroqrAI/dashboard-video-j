@@ -77,6 +77,7 @@ const DEMO_CALLS: CallLog[] = [
 export default function Dashboard() {
   const { user } = useAuth()
   const [rawCalls, setRawCalls] = useState<CallLog[]>([])
+  const [citasReales, setCitasReales] = useState(0)
   const [days, setDays] = useState(30)
   const [loading, setLoading] = useState(true)
   const [lastSync, setLastSync] = useState('')
@@ -96,15 +97,26 @@ export default function Dashboard() {
         setLastSync(new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }))
         setLoading(false)
       })
+
+    // Citas reales agendadas por el agente (tabla appointments)
+    supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .neq('status', 'cancelled')
+      .gte('created_at', from)
+      .then(({ count }) => setCitasReales(count ?? 0))
   }, [user, days])
 
   const calls = rawCalls.length > 0 ? rawCalls : DEMO_CALLS
+  const isDemo = rawCalls.length === 0
 
 
   // KPIs
   const total = calls.length
   const fueraHorario = calls.filter(c => c.is_out_of_hours).length
-  const citas = calls.filter(c => c.is_appointment).length
+  // Citas: en datos reales, contar la tabla appointments; en demo, el flag de las llamadas demo
+  const citas = isDemo ? calls.filter(c => c.is_appointment).length : citasReales
   const totalMs = calls.reduce((s, c) => s + (c.duration_ms || 0), 0)
   const facturacion = citas * TICKET_MEDIO
 

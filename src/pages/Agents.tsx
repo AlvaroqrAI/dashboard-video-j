@@ -135,7 +135,7 @@ export default function Agents() {
             {/* Viñeta compacta */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{
-                width: 185, height: 225, borderRadius: 16, overflow: 'hidden',
+                width: 260, height: 320, borderRadius: 18, overflow: 'hidden',
                 border: '2px solid rgba(124,111,224,0.45)', boxShadow: '0 0 40px rgba(124,111,224,0.3)',
                 background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'

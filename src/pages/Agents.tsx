@@ -122,21 +122,21 @@ export default function Agents() {
         </div>
       ) : (
         <>
-          {/* Avatar card — estilo tarjeta de personaje */}
+          {/* Avatar card — compacta horizontal */}
           <div style={{
             background: 'linear-gradient(160deg, rgba(124,111,224,0.12) 0%, #13141C 45%)',
-            border: '1px solid rgba(124,111,224,0.3)', borderRadius: 20, padding: '2.5rem 2rem 2rem',
-            marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            border: '1px solid rgba(124,111,224,0.3)', borderRadius: 20, padding: '1.2rem 1.5rem',
+            marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '1.5rem',
             position: 'relative', overflow: 'hidden'
           }}>
             {/* Glow decorativo */}
-            <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,111,224,0.25) 0%, rgba(124,111,224,0) 70%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: -80, left: 40, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,111,224,0.22) 0%, rgba(124,111,224,0) 70%)', pointerEvents: 'none' }} />
 
-            {/* Avatar: viñeta grande rectangular estilo tarjeta de personaje */}
-            <div style={{ position: 'relative', marginBottom: '1.4rem' }}>
+            {/* Viñeta compacta */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{
-                width: 300, maxWidth: '80vw', height: 360, borderRadius: 20, overflow: 'hidden',
-                border: '2px solid rgba(124,111,224,0.45)', boxShadow: '0 0 60px rgba(124,111,224,0.3)',
+                width: 150, height: 185, borderRadius: 16, overflow: 'hidden',
+                border: '2px solid rgba(124,111,224,0.45)', boxShadow: '0 0 40px rgba(124,111,224,0.3)',
                 background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
@@ -148,32 +148,33 @@ export default function Agents() {
                     const el = e.currentTarget
                     el.style.display = 'none'
                     if (el.parentElement) {
-                      el.parentElement.innerHTML = `<span style="font-size:64px;font-weight:800;color:#fff">${getInitials(agent.name)}</span>`
+                      el.parentElement.innerHTML = `<span style="font-size:40px;font-weight:800;color:#fff">${getInitials(agent.name)}</span>`
                     }
                   }}
                 />
               </div>
-              {/* Punto de estado sobre la viñeta */}
+              {/* Badge de estado sobre la viñeta */}
               <div style={{
-                position: 'absolute', top: 14, right: 14, display: 'flex', alignItems: 'center', gap: 6,
-                background: 'rgba(13,14,20,0.75)', backdropFilter: 'blur(4px)',
-                borderRadius: 999, padding: '5px 12px',
+                position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5,
+                background: 'rgba(13,14,20,0.78)', backdropFilter: 'blur(4px)',
+                borderRadius: 999, padding: '3px 9px',
                 border: `1px solid ${agent.status === 'active' ? 'rgba(52,211,153,0.4)' : '#2A2B35'}`
               }}>
-                <div style={{ width: 9, height: 9, borderRadius: '50%', background: agent.status === 'active' ? '#34D399' : '#4A4960' }} />
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: agent.status === 'active' ? '#34D399' : '#4A4960', textTransform: 'uppercase' }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: agent.status === 'active' ? '#34D399' : '#4A4960' }} />
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: agent.status === 'active' ? '#34D399' : '#4A4960', textTransform: 'uppercase' }}>
                   {agent.status === 'active' ? 'En línea' : 'Pausada'}
                 </span>
               </div>
             </div>
 
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: '#F1F0F5', margin: 0, letterSpacing: '-0.01em' }}>
-              Sara <span style={{ color: '#9B8FEF' }}>— Recepcionista IA</span>
-            </h2>
-            <p style={{ fontSize: 13, color: '#8B8A9E', marginTop: 4 }}>{agent.name}</p>
-            <p style={{ fontSize: 11, color: '#4A4960', fontFamily: 'monospace', marginTop: 2 }}>{agent.retell_agent_id || '—'}</p>
+            {/* Info a la derecha */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#F1F0F5', margin: 0, letterSpacing: '-0.01em' }}>
+                Sara <span style={{ color: '#9B8FEF' }}>— Recepcionista IA</span>
+              </h2>
+              <p style={{ fontSize: 13, color: '#8B8A9E', marginTop: 4 }}>{agent.name}</p>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '1.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '1rem' }}>
               <span style={{
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
                 padding: '5px 12px', borderRadius: 999,
@@ -195,6 +196,7 @@ export default function Agents() {
               >
                 Editar prompt
               </button>
+              </div>
             </div>
           </div>
 

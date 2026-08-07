@@ -132,33 +132,39 @@ export default function Agents() {
             {/* Glow decorativo */}
             <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,111,224,0.25) 0%, rgba(124,111,224,0) 70%)', pointerEvents: 'none' }} />
 
-            {/* Avatar: imagen si existe /sara-avatar.png, si no iniciales */}
-            <div style={{ position: 'relative', marginBottom: '1.2rem' }}>
+            {/* Avatar: viñeta grande rectangular estilo tarjeta de personaje */}
+            <div style={{ position: 'relative', marginBottom: '1.4rem' }}>
               <div style={{
-                width: 140, height: 140, borderRadius: '50%', overflow: 'hidden',
-                border: '3px solid rgba(124,111,224,0.5)', boxShadow: '0 0 40px rgba(124,111,224,0.35)',
+                width: 420, maxWidth: '80vw', height: 340, borderRadius: 20, overflow: 'hidden',
+                border: '2px solid rgba(124,111,224,0.45)', boxShadow: '0 0 60px rgba(124,111,224,0.3)',
                 background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 <img
                   src="/sara-avatar.png"
                   alt="Sara"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 22%' }}
                   onError={(e) => {
                     const el = e.currentTarget
                     el.style.display = 'none'
                     if (el.parentElement) {
-                      el.parentElement.innerHTML = `<span style="font-size:42px;font-weight:800;color:#fff">${getInitials(agent.name)}</span>`
+                      el.parentElement.innerHTML = `<span style="font-size:64px;font-weight:800;color:#fff">${getInitials(agent.name)}</span>`
                     }
                   }}
                 />
               </div>
-              {/* Punto de estado sobre el avatar */}
+              {/* Punto de estado sobre la viñeta */}
               <div style={{
-                position: 'absolute', bottom: 8, right: 8, width: 22, height: 22, borderRadius: '50%',
-                background: agent.status === 'active' ? '#34D399' : '#4A4960',
-                border: '3px solid #13141C'
-              }} />
+                position: 'absolute', top: 14, right: 14, display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(13,14,20,0.75)', backdropFilter: 'blur(4px)',
+                borderRadius: 999, padding: '5px 12px',
+                border: `1px solid ${agent.status === 'active' ? 'rgba(52,211,153,0.4)' : '#2A2B35'}`
+              }}>
+                <div style={{ width: 9, height: 9, borderRadius: '50%', background: agent.status === 'active' ? '#34D399' : '#4A4960' }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: agent.status === 'active' ? '#34D399' : '#4A4960', textTransform: 'uppercase' }}>
+                  {agent.status === 'active' ? 'En línea' : 'Pausada'}
+                </span>
+              </div>
             </div>
 
             <h2 style={{ fontSize: 24, fontWeight: 800, color: '#F1F0F5', margin: 0, letterSpacing: '-0.01em' }}>

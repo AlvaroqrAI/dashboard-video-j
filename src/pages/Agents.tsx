@@ -135,7 +135,7 @@ export default function Agents() {
             {/* Avatar: viñeta grande rectangular estilo tarjeta de personaje */}
             <div style={{ position: 'relative', marginBottom: '1.4rem' }}>
               <div style={{
-                width: 420, maxWidth: '80vw', height: 340, borderRadius: 20, overflow: 'hidden',
+                width: 300, maxWidth: '80vw', height: 360, borderRadius: 20, overflow: 'hidden',
                 border: '2px solid rgba(124,111,224,0.45)', boxShadow: '0 0 60px rgba(124,111,224,0.3)',
                 background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -143,7 +143,7 @@ export default function Agents() {
                 <img
                   src="/sara-avatar.png"
                   alt="Sara"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 22%' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
                   onError={(e) => {
                     const el = e.currentTarget
                     el.style.display = 'none'

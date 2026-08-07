@@ -126,7 +126,7 @@ export default function Agents() {
           <div style={{
             background: 'linear-gradient(160deg, rgba(124,111,224,0.12) 0%, #13141C 45%)',
             border: '1px solid rgba(124,111,224,0.3)', borderRadius: 20, padding: '1.2rem 1.5rem',
-            marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '1.5rem',
+            marginBottom: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem',
             position: 'relative', overflow: 'hidden'
           }}>
             {/* Glow decorativo */}
@@ -135,7 +135,7 @@ export default function Agents() {
             {/* Viñeta compacta */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{
-                width: 150, height: 185, borderRadius: 16, overflow: 'hidden',
+                width: 185, height: 225, borderRadius: 16, overflow: 'hidden',
                 border: '2px solid rgba(124,111,224,0.45)', boxShadow: '0 0 40px rgba(124,111,224,0.3)',
                 background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'

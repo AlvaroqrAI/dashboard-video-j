@@ -122,46 +122,74 @@ export default function Agents() {
         </div>
       ) : (
         <>
-          {/* Avatar card */}
-          <div style={{ background: '#13141C', border: '1px solid #2A2B35', borderRadius: 16, padding: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            {/* Avatar */}
-            <div style={{
-              width: 72, height: 72, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 24, fontWeight: 800, color: '#fff', flexShrink: 0
-            }}>
-              {getInitials(agent.name)}
-            </div>
-            {/* Info */}
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: '#F1F0F5', margin: 0 }}>{agent.name}</h2>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                  padding: '3px 8px', borderRadius: 6,
-                  background: agent.status === 'active' ? 'rgba(124,111,224,0.15)' : 'rgba(74,73,96,0.2)',
-                  color: agent.status === 'active' ? '#9B8FEF' : '#4A4960',
-                  border: `1px solid ${agent.status === 'active' ? 'rgba(124,111,224,0.3)' : '#2A2B35'}`
-                }}>
-                  {agent.status === 'active' ? '● Activo' : '● Pausado'}
-                </span>
+          {/* Avatar card — estilo tarjeta de personaje */}
+          <div style={{
+            background: 'linear-gradient(160deg, rgba(124,111,224,0.12) 0%, #13141C 45%)',
+            border: '1px solid rgba(124,111,224,0.3)', borderRadius: 20, padding: '2.5rem 2rem 2rem',
+            marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            position: 'relative', overflow: 'hidden'
+          }}>
+            {/* Glow decorativo */}
+            <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,111,224,0.25) 0%, rgba(124,111,224,0) 70%)', pointerEvents: 'none' }} />
+
+            {/* Avatar: imagen si existe /sara-avatar.png, si no iniciales */}
+            <div style={{ position: 'relative', marginBottom: '1.2rem' }}>
+              <div style={{
+                width: 140, height: 140, borderRadius: '50%', overflow: 'hidden',
+                border: '3px solid rgba(124,111,224,0.5)', boxShadow: '0 0 40px rgba(124,111,224,0.35)',
+                background: 'linear-gradient(135deg, #7C6FE0, #9B8FEF)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <img
+                  src="/sara-avatar.png"
+                  alt="Sara"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }}
+                  onError={(e) => {
+                    const el = e.currentTarget
+                    el.style.display = 'none'
+                    if (el.parentElement) {
+                      el.parentElement.innerHTML = `<span style="font-size:42px;font-weight:800;color:#fff">${getInitials(agent.name)}</span>`
+                    }
+                  }}
+                />
               </div>
-              <p style={{ fontSize: 12, color: '#4A4960', fontFamily: 'monospace', margin: 0 }}>{agent.retell_agent_id || '—'}</p>
+              {/* Punto de estado sobre el avatar */}
+              <div style={{
+                position: 'absolute', bottom: 8, right: 8, width: 22, height: 22, borderRadius: '50%',
+                background: agent.status === 'active' ? '#34D399' : '#4A4960',
+                border: '3px solid #13141C'
+              }} />
             </div>
-            {/* Editar prompt */}
-            <button
-              type="button"
-              onClick={() => void openEditor(agent)}
-              disabled={!agent.retell_agent_id}
-              style={{
-                background: 'rgba(124,111,224,0.1)', border: '1px solid rgba(124,111,224,0.3)',
-                borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700,
-                color: '#9B8FEF', cursor: 'pointer', letterSpacing: '0.05em'
-              }}
-            >
-              Editar prompt
-            </button>
+
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: '#F1F0F5', margin: 0, letterSpacing: '-0.01em' }}>
+              Sara <span style={{ color: '#9B8FEF' }}>— Recepcionista IA</span>
+            </h2>
+            <p style={{ fontSize: 13, color: '#8B8A9E', marginTop: 4 }}>{agent.name}</p>
+            <p style={{ fontSize: 11, color: '#4A4960', fontFamily: 'monospace', marginTop: 2 }}>{agent.retell_agent_id || '—'}</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '1.2rem' }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                padding: '5px 12px', borderRadius: 999,
+                background: agent.status === 'active' ? 'rgba(52,211,153,0.12)' : 'rgba(74,73,96,0.2)',
+                color: agent.status === 'active' ? '#34D399' : '#4A4960',
+                border: `1px solid ${agent.status === 'active' ? 'rgba(52,211,153,0.3)' : '#2A2B35'}`
+              }}>
+                {agent.status === 'active' ? '● Activa 24/7' : '● Pausada'}
+              </span>
+              <button
+                type="button"
+                onClick={() => void openEditor(agent)}
+                disabled={!agent.retell_agent_id}
+                style={{
+                  background: 'rgba(124,111,224,0.12)', border: '1px solid rgba(124,111,224,0.35)',
+                  borderRadius: 999, padding: '5px 14px', fontSize: 11, fontWeight: 700,
+                  color: '#9B8FEF', cursor: 'pointer', letterSpacing: '0.05em'
+                }}
+              >
+                Editar prompt
+              </button>
+            </div>
           </div>
 
           {/* Métricas */}

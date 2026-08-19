@@ -53,16 +53,15 @@ export default function Agents() {
         setLoading(false)
       })
 
-    supabase
-      .from('call_logs')
-      .select('call_id, is_appointment')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
-        const total = (data ?? []).length
-        const citas = (data ?? []).filter(c => c.is_appointment).length
-        const tasa = total > 0 ? Math.round((citas / total) * 100) : 0
-        setMetrics({ total, citas, tasa })
-      })
+    Promise.all([
+      supabase.from('call_logs').select('call_id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('appointments').select('id', { count: 'exact', head: true }).eq('user_id', user.id).neq('status', 'cancelled'),
+    ]).then(([callsRes, apptsRes]) => {
+      const total = callsRes.count ?? 0
+      const citas = apptsRes.count ?? 0
+      const tasa = total > 0 ? Math.round((citas / total) * 100) : 0
+      setMetrics({ total, citas, tasa })
+    })
   }, [user])
 
   async function openEditor(a: AgentRow) {

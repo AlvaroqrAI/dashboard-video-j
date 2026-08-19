@@ -1,21 +1,24 @@
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/auth.ts'
 
-// Tool de Retell: agenda una cita
-// Body: { agent_id, call_id?, client_name, client_phone, car_model, plate, reason, date, time }
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const body = await req.json()
-  const { agent_id, call_id, client_name, client_phone, car_model, plate, reason, date, time } = body
+  const body = await req.json().catch(() => ({}))
+
+  // Retell envía { call: { agent_id, call_id, ... }, client_name, client_phone, ... }
+  const agent_id: string | undefined = body?.call?.agent_id
+  const call_id: string | undefined = body?.call?.call_id
+  const { client_name, client_phone, car_model, plate, reason, date, time } = body
+
+  console.log('[book-appointment]', { agent_id, call_id, client_name, date, time })
 
   if (!agent_id || !date || !time) {
-    return json({ success: false, reason: 'Faltan parámetros: agent_id, date, time' }, 400)
+    return json({ success: false, reason: `Faltan parámetros: ${JSON.stringify({ agent_id, date, time })}` }, 400)
   }
 
   const admin = adminClient()
 
-  // Obtener user_id del agente
   const { data: agentRow } = await admin
     .from('agents')
     .select('user_id')
@@ -26,7 +29,6 @@ Deno.serve(async (req) => {
 
   if (!agentRow) return json({ success: false, reason: 'Agente no encontrado' }, 404)
 
-  // Verificar disponibilidad una vez más (evita race conditions)
   const { data: profile } = await admin
     .from('profiles')
     .select('max_concurrent_appointments')
@@ -47,7 +49,6 @@ Deno.serve(async (req) => {
     return json({ success: false, reason: 'No hay disponibilidad en ese horario.' })
   }
 
-  // Insertar cita
   const { data: appt, error } = await admin
     .from('appointments')
     .insert({
@@ -70,7 +71,6 @@ Deno.serve(async (req) => {
     return json({ success: false, reason: error.message }, 500)
   }
 
-  // Marcar la llamada como cita agendada
   if (call_id) {
     await admin
       .from('call_logs')

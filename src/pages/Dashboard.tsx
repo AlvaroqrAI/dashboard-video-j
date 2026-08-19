@@ -88,7 +88,8 @@ const DEMO_CALLS: CallLog[] = [
 ]
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const tallerName = profile?.full_name || 'Mi taller'
   const [rawCalls, setRawCalls] = useState<CallLog[]>([])
   const [citasReales, setCitasReales] = useState(0)
   const [days, setDays] = useState(30)
@@ -361,7 +362,7 @@ export default function Dashboard() {
                       <span style={{ fontSize: 10, color: '#4A4960', flexShrink: 0, marginLeft: 4 }}>{c.start_timestamp ? fmtTime(c.start_timestamp) : ''}</span>
                     </div>
                     <div style={{ fontSize: 10, color: '#4A4960', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {isCita ? '🗓 Cita agendada · SRC Automoción' : `Agente SRC Automoción`}
+                      {isCita ? `🗓 Cita agendada · ${tallerName}` : `Agente ${tallerName}`}
                     </div>
                   </div>
                 </div>

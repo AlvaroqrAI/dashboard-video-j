@@ -54,7 +54,7 @@ export default function Sidebar() {
       <div style={{ margin: '10px', padding: '10px 12px', background: 'rgba(124,111,224,0.08)', border: '1px solid rgba(124,111,224,0.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
         <div style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(124,111,224,0.15)', border: '1px solid rgba(124,111,224,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🔧</div>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#F1F0F5' }}>SRC Automoción</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#F1F0F5' }}>{profile?.full_name || 'Mi taller'}</div>
           <div style={{ fontSize: 10, color: '#34D399', display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
             Agente activo

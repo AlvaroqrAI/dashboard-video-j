@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
 const pageLabels: Record<string, string> = {
   '/': 'Inicio',
@@ -11,6 +12,7 @@ const pageLabels: Record<string, string> = {
 
 export default function Topbar() {
   const location = useLocation()
+  const { profile } = useAuth()
   const label = pageLabels[location.pathname] ?? 'Dashboard'
 
   return (
@@ -19,7 +21,7 @@ export default function Topbar() {
         <span style={{ fontSize: 11, color: '#4A4960' }}>Panel /</span>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#F1F0F5' }}>{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(124,111,224,0.1)', border: '1px solid rgba(124,111,224,0.25)', color: '#9B8FEF', padding: '2px 9px', borderRadius: 999, fontSize: 10.5, fontWeight: 600 }}>
-          🔧 SRC AUTOMOCIÓN
+          🔧 {(profile?.full_name || 'MI TALLER').toUpperCase()}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#34D399' }}>

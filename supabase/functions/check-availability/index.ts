@@ -1,19 +1,24 @@
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/auth.ts'
 
-// Tool de Retell: comprueba si hay hueco para una cita
-// Body: { agent_id, date: "YYYY-MM-DD", time: "HH:MM" }
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const { agent_id, date, time } = await req.json()
+  const body = await req.json().catch(() => ({}))
+
+  // Retell envía { call: { agent_id, ... }, date, time }
+  const agent_id: string | undefined = body?.call?.agent_id
+  const date: string | undefined = body?.date
+  const time: string | undefined = body?.time
+
+  console.log('[check-availability]', { agent_id, date, time })
+
   if (!agent_id || !date || !time) {
-    return json({ available: false, reason: 'Faltan parámetros: agent_id, date, time' }, 400)
+    return json({ available: false, reason: `Faltan parámetros: ${JSON.stringify({ agent_id, date, time })}` }, 400)
   }
 
   const admin = adminClient()
 
-  // Obtener user_id y capacidad máxima del taller via el agente
   const { data: agentRow } = await admin
     .from('agents')
     .select('user_id')
@@ -32,7 +37,6 @@ Deno.serve(async (req) => {
 
   const maxSlots = profile?.max_concurrent_appointments ?? 2
 
-  // Contar citas existentes en ese slot
   const { count } = await admin
     .from('appointments')
     .select('id', { count: 'exact', head: true })

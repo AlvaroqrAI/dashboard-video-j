@@ -19,7 +19,10 @@ interface CallRow {
   user_sentiment: string | null
   call_successful: boolean | null
   call_reason: string | null
+  is_appointment: boolean | null
 }
+
+interface ApptInfo { name: string | null; reason: string | null }
 
 interface AgentOption { retell_agent_id: string | null; name: string }
 
@@ -31,7 +34,7 @@ interface Filters {
 
 const emptyFilters: Filters = { search:'', callId:'', agentId:'', direction:'', sentiment:'', result:'', fromNumber:'', toNumber:'', dateFrom:'', dateTo:'' }
 const PAGE_SIZE = 25
-const COLS = 'call_id, agent_id, agent_name, direction, from_number, to_number, duration_ms, start_timestamp, disconnection_reason, recording_url, transcript, call_summary, user_sentiment, call_successful, call_reason'
+const COLS = 'call_id, agent_id, agent_name, direction, from_number, to_number, duration_ms, start_timestamp, disconnection_reason, recording_url, transcript, call_summary, user_sentiment, call_successful, call_reason, is_appointment'
 
 const inp: React.CSSProperties = { width:'100%', background:'#0D0E14', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#F1F0F5', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }
 const lbl: React.CSSProperties = { fontSize:10, fontWeight:600, color:'#4A4960', textTransform:'uppercase' as const, letterSpacing:'0.1em', marginBottom:5, display:'block' }
@@ -95,12 +98,33 @@ export default function Calls() {
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState<Filters>(emptyFilters)
   const [applied, setApplied] = useState<Filters>(emptyFilters)
+  const [apptInfo, setApptInfo] = useState<Record<string, ApptInfo>>({})
 
   useEffect(() => {
     if (!user) return
     supabase.from('agents').select('retell_agent_id, name').eq('user_id', user.id)
       .then(({ data }) => setAgents((data ?? []) as AgentOption[]))
   }, [user])
+
+  // Nombre y motivo real de la cita (si la llamada terminó en una reserva) — consulta aislada
+  // y con captura silenciosa: si falla, la tabla de llamadas sigue funcionando igual.
+  useEffect(() => {
+    if (!user) return
+    const ids = rows.map(r => r.call_id).filter(Boolean)
+    if (ids.length === 0) { setApptInfo({}); return }
+    let cancelled = false
+    supabase.from('appointments').select('call_id, client_name, reason')
+      .eq('user_id', user.id).in('call_id', ids)
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        const map: Record<string, ApptInfo> = {}
+        for (const a of data as { call_id: string | null; client_name: string | null; reason: string | null }[]) {
+          if (a.call_id) map[a.call_id] = { name: a.client_name, reason: a.reason }
+        }
+        setApptInfo(map)
+      }, () => {})
+    return () => { cancelled = true }
+  }, [user, rows])
 
   useEffect(() => {
     const t = setTimeout(() => { setApplied(filters); setPage(0) }, 350)
@@ -237,20 +261,33 @@ export default function Calls() {
                 <table style={{ width:'100%', borderCollapse:'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-                      {['Motivo','Duración','Fecha','Estado'].map(h => (
+                      {['Motivo','Teléfono','Duración','Fecha','Cita agendada','Estado'].map(h => (
                         <th key={h} style={{ padding:'12px 16px', textAlign:'left', fontSize:10, fontWeight:600, color:'#4A4960', textTransform:'uppercase', letterSpacing:'0.1em' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map(c => (
+                    {rows.map(c => {
+                      const appt = apptInfo[c.call_id]
+                      const motivo = appt?.reason || getMotivoConfig(c.transcript, c.call_reason)?.label
+                      return (
                       <tr key={c.call_id} onClick={() => setSelected(c)}
                         style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer', background: selected?.call_id === c.call_id ? 'rgba(124,111,224,0.08)' : 'transparent', transition:'background 0.1s' }}>
                         <td style={{ padding:'12px 16px', fontSize:12, color:'#F1F0F5' }}>
-                          {getMotivoConfig(c.transcript, c.call_reason)?.label ?? <span style={{ color:'#4A4960' }}>—</span>}
+                          {motivo ?? <span style={{ color:'#4A4960' }}>—</span>}
+                        </td>
+                        <td style={{ padding:'12px 16px' }}>
+                          <div style={{ fontSize:12, color:'#F1F0F5', fontFamily:'monospace' }}>{c.from_number || '—'}</div>
+                          {appt?.name && <div style={{ fontSize:11, color:'#8B8A99', marginTop:2 }}>{appt.name}</div>}
                         </td>
                         <td style={{ padding:'12px 16px', fontSize:13, fontWeight:700, color: durationColor(c.duration_ms) }}>{fmtDuration(c.duration_ms)}</td>
                         <td style={{ padding:'12px 16px', fontSize:12, color:'#8B8A99' }}>{fmtDate(c.start_timestamp)}</td>
+                        <td style={{ padding:'12px 16px' }}>
+                          <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:500, color: c.is_appointment ? '#34D399' : '#4A4960' }}>
+                            {c.is_appointment && <span style={{ width:5, height:5, borderRadius:'50%', background:'#34D399', display:'inline-block' }}/>}
+                            {c.is_appointment ? 'Sí' : 'No'}
+                          </span>
+                        </td>
                         <td style={{ padding:'12px 16px' }}>
                           <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:500,
                             color: c.call_successful == null ? '#4A4960' : c.call_successful ? '#34D399' : '#F87171' }}>
@@ -259,7 +296,8 @@ export default function Calls() {
                           </span>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               )}

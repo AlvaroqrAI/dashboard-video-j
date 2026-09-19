@@ -131,8 +131,7 @@ export default function Sidebar() {
             right: 12,
             top: indicator.top,
             height: indicator.height,
-            background: 'rgba(124,111,224,0.12)',
-            border: '1px solid rgba(124,111,224,0.28)',
+            background: '#7C6FE0',
             borderRadius: 8,
             transition: 'top 220ms cubic-bezier(0.4,0,0.2,1), height 220ms cubic-bezier(0.4,0,0.2,1)',
             pointerEvents: 'none',
@@ -153,12 +152,12 @@ export default function Sidebar() {
                   position: 'relative',
                   zIndex: 1,
                   background: 'transparent',
-                  color: '#C4BCFF',
+                  color: '#fff',
                   border: '1px solid transparent',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   fontSize: '12.5px',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
@@ -182,9 +181,13 @@ export default function Sidebar() {
                   transition: 'color 150ms ease',
                 }}
               >
-                <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}
-                {item.tag && <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9B8FEF' }}>{item.tag}</span>}
-                {item.dot && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: item.dot, display: 'inline-block' }} />}
+                {({ isActive }) => (
+                  <>
+                    <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}
+                    {item.tag && <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: isActive ? 'rgba(255,255,255,0.85)' : '#9B8FEF' }}>{item.tag}</span>}
+                    {item.dot && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: item.dot, display: 'inline-block' }} />}
+                  </>
+                )}
               </NavLink>
             ))}
           </div>
@@ -199,12 +202,12 @@ export default function Sidebar() {
               style={({ isActive }) => ({
                 position: 'relative',
                 zIndex: 1,
-                color: isActive ? '#C4BCFF' : '#8B8A99',
+                color: isActive ? '#fff' : '#8B8A99',
                 border: '1px solid transparent',
                 borderRadius: '8px',
                 padding: '8px 12px',
                 fontSize: '12.5px',
-                fontWeight: isActive ? 500 : 400,
+                fontWeight: isActive ? 600 : 400,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',

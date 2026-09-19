@@ -17,7 +17,7 @@ const icons: Record<string, React.ReactElement> = {
   gear: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>,
 }
 
-interface NavItem { to: string; label: string; end?: boolean; icon: React.ReactElement; tag?: string; dot?: string; variant?: 'button' }
+interface NavItem { to: string; label: string; end?: boolean; icon: React.ReactElement; tag?: string; dot?: string }
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
@@ -46,7 +46,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: 'Soporte',
     items: [
-      { to: '/tickets', label: 'Tickets', icon: icons.ring, variant: 'button' },
+      { to: '/tickets', label: 'Tickets', icon: icons.ring },
     ],
   },
 ]
@@ -145,16 +145,6 @@ export default function Sidebar() {
               {group.label}
             </div>
             {group.items.map((item) => (
-              item.variant === 'button' ? (
-                <NavLink key={item.to} to={item.to} end={item.end}
-                  style={{
-                    position: 'relative', zIndex: 1, background: '#7C6FE0', color: '#fff', border: '1px solid transparent',
-                    borderRadius: '9px', padding: '9px 12px', fontSize: '12.5px', fontWeight: 700, display: 'flex',
-                    alignItems: 'center', gap: '8px', textDecoration: 'none', marginBottom: 1, marginTop: 2,
-                  }}>
-                  {item.icon}{item.label}
-                </NavLink>
-              ) : (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -196,7 +186,6 @@ export default function Sidebar() {
                 {item.tag && <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9B8FEF' }}>{item.tag}</span>}
                 {item.dot && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: item.dot, display: 'inline-block' }} />}
               </NavLink>
-              )
             ))}
           </div>
         ))}

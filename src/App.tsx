@@ -22,6 +22,9 @@ import Calendar from '@/pages/Calendar'
 import Services from '@/pages/Services'
 import Rentabilidad from '@/pages/Rentabilidad'
 import Conversaciones from '@/pages/Conversaciones'
+import Horarios from '@/pages/Horarios'
+import Tickets from '@/pages/Tickets'
+import Talleres from '@/pages/Talleres'
 
 // Admin
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -72,6 +75,9 @@ export default function App() {
                   <Route path="services" element={<Services />} />
                   <Route path="rentabilidad" element={<Rentabilidad />} />
                   <Route path="conversaciones" element={<Conversaciones />} />
+                  <Route path="horarios" element={<Horarios />} />
+                  <Route path="tickets" element={<Tickets />} />
+                  <Route path="talleres" element={<Talleres />} />
                 </Route>
               </Route>
             </Route>

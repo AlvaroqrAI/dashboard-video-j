@@ -10,13 +10,20 @@ const icons: Record<string, React.ReactElement> = {
   wrench: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.9L4 16.5V20h3.5l5.3-5.3a4 4 0 0 0 4.9-5.4l-2.6 2.6-2-2 2.6-2.6Z"/></svg>,
   trend: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16 9.5 10.2 13.5 14 20 6.5"/><path d="M14.5 6.5H20V12"/></svg>,
   chat: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-4 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z"/></svg>,
+  grid: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>,
+  clock: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>,
+  ring: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M6.2 6.2l3.4 3.4M17.8 6.2l-3.4 3.4M6.2 17.8l3.4-3.4M17.8 17.8l-3.4-3.4"/></svg>,
+  building: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 21v-4h6v4M8 7h1M15 7h1M8 11h1M15 11h1M8 15h1M15 15h1"/></svg>,
+  gear: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>,
 }
 
-const navGroups: { label: string; items: { to: string; label: string; end?: boolean; icon: React.ReactElement; tag?: string }[] }[] = [
+interface NavItem { to: string; label: string; end?: boolean; icon: React.ReactElement; tag?: string; dot?: string; variant?: 'button' }
+
+const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: 'Actividad',
     items: [
-      { to: '/', label: 'Inicio', end: true, icon: icons.home },
+      { to: '/', label: 'Inicio', end: true, icon: icons.grid, dot: '#34D399' },
       { to: '/calls', label: 'Llamadas', icon: icons.phone },
       { to: '/conversaciones', label: 'Conversaciones', icon: icons.chat, tag: 'En desarrollo' },
       { to: '/calendar', label: 'Calendario', icon: icons.calendar },
@@ -27,6 +34,7 @@ const navGroups: { label: string; items: { to: string; label: string; end?: bool
     items: [
       { to: '/agents', label: 'Mi Agente', icon: icons.robot },
       { to: '/services', label: 'Servicios', icon: icons.wrench },
+      { to: '/horarios', label: 'Horarios', icon: icons.clock },
     ],
   },
   {
@@ -35,6 +43,17 @@ const navGroups: { label: string; items: { to: string; label: string; end?: bool
       { to: '/rentabilidad', label: 'Rentabilidad', icon: icons.trend },
     ],
   },
+  {
+    label: 'Soporte',
+    items: [
+      { to: '/tickets', label: 'Tickets', icon: icons.ring, variant: 'button' },
+    ],
+  },
+]
+
+const bottomItems: NavItem[] = [
+  { to: '/talleres', label: 'Talleres', icon: icons.building },
+  { to: '/settings', label: 'Configuración', icon: icons.gear },
 ]
 
 export default function Sidebar() {
@@ -126,6 +145,16 @@ export default function Sidebar() {
               {group.label}
             </div>
             {group.items.map((item) => (
+              item.variant === 'button' ? (
+                <NavLink key={item.to} to={item.to} end={item.end}
+                  style={{
+                    position: 'relative', zIndex: 1, background: '#7C6FE0', color: '#fff', border: '1px solid transparent',
+                    borderRadius: '9px', padding: '9px 12px', fontSize: '12.5px', fontWeight: 700, display: 'flex',
+                    alignItems: 'center', gap: '8px', textDecoration: 'none', marginBottom: 1, marginTop: 2,
+                  }}>
+                  {item.icon}{item.label}
+                </NavLink>
+              ) : (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -165,10 +194,40 @@ export default function Sidebar() {
               >
                 <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}
                 {item.tag && <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9B8FEF' }}>{item.tag}</span>}
+                {item.dot && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: item.dot, display: 'inline-block' }} />}
               </NavLink>
+              )
             ))}
           </div>
         ))}
+
+        {/* Talleres / Configuración — fuera de los grupos, como en la maqueta */}
+        <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          {bottomItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              style={({ isActive }) => ({
+                position: 'relative',
+                zIndex: 1,
+                color: isActive ? '#C4BCFF' : '#8B8A99',
+                border: '1px solid transparent',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                fontSize: '12.5px',
+                fontWeight: isActive ? 500 : 400,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                textDecoration: 'none',
+                marginBottom: 1,
+                transition: 'color 150ms ease',
+              })}
+            >
+              <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}
+            </NavLink>
+          ))}
+        </div>
       </nav>
 
       {/* Usuario */}

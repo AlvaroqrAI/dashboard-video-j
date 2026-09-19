@@ -19,6 +19,9 @@ import PhoneNumbers from '@/pages/PhoneNumbers'
 import Billing from '@/pages/Billing'
 import Settings from '@/pages/Settings'
 import Calendar from '@/pages/Calendar'
+import Services from '@/pages/Services'
+import Rentabilidad from '@/pages/Rentabilidad'
+import Conversaciones from '@/pages/Conversaciones'
 
 // Admin
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -66,6 +69,9 @@ export default function App() {
                   <Route path="billing" element={<Billing />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="calendar" element={<Calendar />} />
+                  <Route path="services" element={<Services />} />
+                  <Route path="rentabilidad" element={<Rentabilidad />} />
+                  <Route path="conversaciones" element={<Conversaciones />} />
                 </Route>
               </Route>
             </Route>

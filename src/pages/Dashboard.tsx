@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 
-const TICKET_MEDIO = 300
-
 interface CallLog {
   call_id: string
   call_status: string
@@ -51,31 +49,12 @@ function detectReason(c: CallLog): string {
   return 'Consulta general'
 }
 
-const REASON_COLORS: Record<string, string> = {
-  'Pedir cita': '#7C6FE0',
-  'Consulta precio': '#22D3EE',
-  'Urgencia': '#F87171',
-  'Consulta horario': '#FBBF24',
-  'Consulta general': '#8B8A99',
-}
-
-const kpiCard = (_color: string) => ({
-  background: '#181922',
-  border: `1px solid rgba(255,255,255,0.06)`,
-  borderRadius: 20,
-  padding: '22px 20px',
-  position: 'relative' as const,
-  overflow: 'hidden' as const,
-})
-
-const badge = (bg: string, color: string) => ({
-  display: 'inline-flex', alignItems: 'center', gap: 3,
-  background: bg, color, padding: '3px 9px',
-  borderRadius: 999, fontSize: 11, fontWeight: 700,
-  border: `1px solid ${color}33`,
-})
-
-const card = { background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: 20 }
+const card = { background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }
+const statBox: React.CSSProperties = { padding: '18px 22px', borderRight: '1px solid rgba(255,255,255,0.06)' }
+const statLabel: React.CSSProperties = { fontSize: 11, color: '#8B8A99', marginBottom: 9 }
+const statVal: React.CSSProperties = { fontSize: 23, fontWeight: 600, letterSpacing: '-0.015em', color: '#F1F0F5' }
+const statDelta: React.CSSProperties = { fontSize: 11, color: '#4A4960', marginTop: 6 }
+const statDeltaUp: React.CSSProperties = { ...statDelta, color: '#34D399' }
 
 // Demo data shown when Supabase has no real calls yet
 const DEMO_CALLS: CallLog[] = [
@@ -134,7 +113,6 @@ export default function Dashboard() {
   // Citas: en datos reales, contar la tabla appointments; en demo, el flag de las llamadas demo
   const citas = isDemo ? calls.filter(c => c.is_appointment).length : citasReales
   const totalMs = calls.reduce((s, c) => s + (c.duration_ms || 0), 0)
-  const facturacion = citas * TICKET_MEDIO
 
   // Motivos de llamada
   const reasonMap: Record<string, number> = {}
@@ -171,42 +149,7 @@ export default function Dashboard() {
   })()
 
   const tooltipStyle = { backgroundColor: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#F1F0F5', fontSize: 12 }
-
-  const kpiIcons: Record<string, (color: string) => React.ReactElement> = {
-    phone: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.6 10.8a15.05 15.05 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.56.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02L6.6 10.8z"/></svg>,
-    moon: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
-    calendar: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
-    clock: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>,
-    euro: (c) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 6.5A7 7 0 1 0 17 17.5M3 12h10M3 15h8"/></svg>,
-  }
-
-  const kpis = [
-    {
-      icon: kpiIcons.phone, label: 'Llamadas atendidas', value: total, color: '#9B8FEF',
-      badge: { text: '0 llamadas perdidas', bg: 'rgba(124,111,224,0.15)', color: '#9B8FEF' },
-      sub: `${calls.filter(c => c.call_status === 'ended').length} completadas`,
-    },
-    {
-      icon: kpiIcons.moon, label: 'Fuera de horario', value: fueraHorario, color: '#FBBF24',
-      badge: { text: 'sin agente = 0', bg: 'rgba(251,191,36,0.15)', color: '#FBBF24' },
-      sub: 'Llamadas que se habrían perdido',
-    },
-    {
-      icon: kpiIcons.calendar, label: 'Citas gestionadas', value: citas, color: '#34D399',
-      badge: { text: 'Agendadas automáticamente', bg: 'rgba(52,211,153,0.12)', color: '#34D399' },
-      sub: 'Confirmadas por el agente',
-    },
-    {
-      icon: kpiIcons.clock, label: 'Duración total', value: fmtDuration(totalMs), color: '#22D3EE',
-      badge: { text: 'tiempo ahorrado', bg: 'rgba(34,211,238,0.12)', color: '#22D3EE' },
-      sub: 'Minutos gestionados sin interrupciones',
-    },
-    {
-      icon: kpiIcons.euro, label: 'Facturación estimada', value: `${facturacion.toLocaleString('es-ES')} €`, color: '#34D399',
-      badge: { text: `ticket medio ${TICKET_MEDIO}€`, bg: 'rgba(52,211,153,0.12)', color: '#34D399' },
-      sub: `${citas} citas × ${TICKET_MEDIO}€ · ingreso potencial este mes`,
-    },
-  ]
+  const completadasCount = calls.filter(c => c.call_status === 'ended').length
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -228,25 +171,33 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
-        {kpis.map(k => (
-          <div key={k.label} style={kpiCard(k.color)}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${k.color}44, transparent)` }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#8B8A99', textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1.4 }}>{k.label}</div>
-              <span style={{ flexShrink: 0, marginLeft: 6, display: 'flex' }}>{k.icon(k.color)}</span>
-            </div>
-            <div style={{ fontSize: k.value.toString().length > 7 ? 20 : k.value.toString().length > 4 ? 26 : 36, fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 10 }}>{k.value}</div>
-            <div style={badge(k.badge.bg, k.badge.color)}>{k.badge.text}</div>
-            <div style={{ fontSize: 10.5, color: '#6B6980', marginTop: 8, lineHeight: 1.5 }}>{k.sub}</div>
-          </div>
-        ))}
+      {/* Métricas de hoy */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={statBox}>
+          <div style={statLabel}>Llamadas atendidas</div>
+          <div style={statVal}>{total}</div>
+          <div style={statDelta}>{completadasCount} completadas</div>
+        </div>
+        <div style={statBox}>
+          <div style={statLabel}>Citas gestionadas</div>
+          <div style={statVal}>{citas}</div>
+          <div style={statDeltaUp}>Confirmadas por el agente</div>
+        </div>
+        <div style={statBox}>
+          <div style={statLabel}>Fuera de horario</div>
+          <div style={statVal}>{fueraHorario}</div>
+          <div style={statDelta}>Atendidas sin agente = 0</div>
+        </div>
+        <div style={{ ...statBox, borderRight: 'none' }}>
+          <div style={statLabel}>Duración total</div>
+          <div style={statVal}>{fmtDuration(totalMs)}</div>
+          <div style={statDelta}>Tiempo gestionado sin interrupciones</div>
+        </div>
       </div>
 
       {/* Fila 2: gráfico área + estado sistema */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-        <div style={{ ...card, borderRadius: 20 }}>
+        <div style={{ ...card }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5' }}>Llamadas por día · últimos {days} días</div>
             {lastSync && <span style={{ fontSize: 10, color: '#4A4960' }}>Actualizado {lastSync}</span>}
@@ -256,7 +207,7 @@ export default function Dashboard() {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7C6FE0" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="#7C6FE0" stopOpacity={0.1} />
                     <stop offset="95%" stopColor="#7C6FE0" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -264,13 +215,13 @@ export default function Dashboard() {
                 <XAxis dataKey="label" stroke="#4A4960" fontSize={9} tickLine={false} interval={Math.floor(chartData.length / 6)} />
                 <YAxis stroke="#4A4960" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="calls" stroke="#7C6FE0" strokeWidth={2} fill="url(#grad)" />
+                <Area type="monotone" dataKey="calls" stroke="#7C6FE0" strokeWidth={1.75} fill="url(#grad)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div style={{ ...card, borderRadius: 20 }}>
+        <div style={{ ...card }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 16 }}>Estado del sistema</div>
           {[
             { label: 'Agente Retell', status: 'Activo', color: '#34D399' },
@@ -279,7 +230,7 @@ export default function Dashboard() {
           ].map(item => (
             <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <span style={{ fontSize: 12, color: '#8B8A99' }}>{item.label}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: item.color }}>✓ {item.status}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: item.color }}>{item.status}</span>
             </div>
           ))}
           <div style={{ marginTop: 12, background: '#1E1F2B', borderRadius: 8, padding: '9px 12px', fontSize: 11, color: '#4A4960' }}>
@@ -292,19 +243,19 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
 
         {/* Motivo de la llamada */}
-        <div style={{ ...card, borderRadius: 20 }}>
+        <div style={{ ...card }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 16 }}>Motivo de la llamada</div>
-          {reasons.map(([reason, count]) => {
+          {reasons.map(([reason, count], i) => {
             const pct = Math.round((count / total) * 100)
-            const color = REASON_COLORS[reason] ?? '#8B8A99'
+            const opacity = Math.max(1 - i * 0.22, 0.3)
             return (
               <div key={reason} style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                   <span style={{ fontSize: 12, color: '#C4C3D0' }}>{reason}</span>
                   <span style={{ fontSize: 11, color: '#8B8A99' }}>{count} · {pct}%</span>
                 </div>
-                <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 999 }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 999, transition: 'width 0.6s ease' }} />
+                <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 999 }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: '#7C6FE0', opacity, borderRadius: 999, transition: 'width 0.6s ease' }} />
                 </div>
               </div>
             )
@@ -312,7 +263,7 @@ export default function Dashboard() {
         </div>
 
         {/* Estado de llamadas — donut */}
-        <div style={{ ...card, borderRadius: 20, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ ...card, display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 8 }}>Estado de llamadas</div>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
             <ResponsiveContainer width="100%" height={160}>
@@ -346,23 +297,22 @@ export default function Dashboard() {
         </div>
 
         {/* Actividad reciente */}
-        <div style={{ ...card, borderRadius: 20, overflow: 'hidden' }}>
+        <div style={{ ...card, overflow: 'hidden' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 12 }}>Actividad reciente</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {calls.slice(0, 6).map(c => {
               const reason = c.call_reason || detectReason(c)
-              const color = REASON_COLORS[reason] ?? '#8B8A99'
               const isCita = reason === 'Pedir cita'
               return (
                 <div key={c.call_id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 4 }} />
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4A4960', flexShrink: 0, marginTop: 5 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: '#C4C3D0' }}>{reason}</span>
                       <span style={{ fontSize: 10, color: '#4A4960', flexShrink: 0, marginLeft: 4 }}>{c.start_timestamp ? fmtTime(c.start_timestamp) : ''}</span>
                     </div>
                     <div style={{ fontSize: 10, color: '#4A4960', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {isCita ? `🗓 Cita agendada · ${tallerName}` : `Agente ${tallerName}`}
+                      {isCita ? `Cita agendada · ${tallerName}` : `Agente ${tallerName}`}
                     </div>
                   </div>
                 </div>

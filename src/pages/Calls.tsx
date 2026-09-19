@@ -47,16 +47,16 @@ function fmtDate(iso?: string | null) {
 }
 function sanitize(t: string) { return t.replace(/[,()*%\\:]/g, ' ').trim() }
 
-const MOTIVO_CONFIG: { keys: string[]; label: string; color: string; bg: string; border: string }[] = [
-  { keys: ['aceite','filtro'],           label: 'Cambio aceite/filtro', color:'#FBBF24', bg:'rgba(251,191,36,0.1)',   border:'rgba(251,191,36,0.3)' },
-  { keys: ['frenos','pastillas'],        label: 'Frenos',               color:'#F87171', bg:'rgba(248,113,113,0.1)', border:'rgba(248,113,113,0.3)' },
-  { keys: ['revisión','revision'],       label: 'Revisión',             color:'#60A5FA', bg:'rgba(96,165,250,0.1)',  border:'rgba(96,165,250,0.3)' },
-  { keys: ['itv'],                       label: 'Revisión ITV',         color:'#60A5FA', bg:'rgba(96,165,250,0.1)',  border:'rgba(96,165,250,0.3)' },
-  { keys: ['neumático','neumatico','rueda'], label: 'Neumáticos',       color:'#F97316', bg:'rgba(249,115,22,0.1)',  border:'rgba(249,115,22,0.3)' },
-  { keys: ['batería','bateria'],         label: 'Batería',              color:'#A78BFA', bg:'rgba(167,139,250,0.1)', border:'rgba(167,139,250,0.3)' },
-  { keys: ['mantenimiento'],             label: 'Mantenimiento',        color:'#34D399', bg:'rgba(52,211,153,0.1)',  border:'rgba(52,211,153,0.3)' },
-  { keys: ['diagnós','diagnostico'],     label: 'Diagnóstico',          color:'#9B8FEF', bg:'rgba(155,143,239,0.1)', border:'rgba(155,143,239,0.3)' },
-  { keys: ['cita','agendar'],            label: 'Cita',                 color:'#34D399', bg:'rgba(52,211,153,0.1)',  border:'rgba(52,211,153,0.3)' },
+const MOTIVO_CONFIG: { keys: string[]; label: string }[] = [
+  { keys: ['aceite','filtro'],           label: 'Cambio aceite/filtro' },
+  { keys: ['frenos','pastillas'],        label: 'Frenos' },
+  { keys: ['revisión','revision'],       label: 'Revisión' },
+  { keys: ['itv'],                       label: 'Revisión ITV' },
+  { keys: ['neumático','neumatico','rueda'], label: 'Neumáticos' },
+  { keys: ['batería','bateria'],         label: 'Batería' },
+  { keys: ['mantenimiento'],             label: 'Mantenimiento' },
+  { keys: ['diagnós','diagnostico'],     label: 'Diagnóstico' },
+  { keys: ['cita','agendar'],            label: 'Cita' },
 ]
 
 function getMotivoConfig(transcript: string | null, callReason: string | null) {
@@ -68,6 +68,7 @@ function getMotivoConfig(transcript: string | null, callReason: string | null) {
   return null
 }
 
+// Un único acento (el morado de marca) graduado por relevancia — no un color por tema.
 function durationColor(ms: number | null) {
   if (!ms) return '#4A4960'
   const s = ms / 1000
@@ -76,10 +77,11 @@ function durationColor(ms: number | null) {
   return '#F1F0F5'
 }
 
+// Semántico, no decorativo: verde/rojo solo para positivo/negativo real.
 function sentimentColor(s: string | null) {
-  if (s === 'Positive') return { color:'#34D399', bg:'rgba(52,211,153,0.1)', border:'rgba(52,211,153,0.3)' }
-  if (s === 'Negative') return { color:'#F87171', bg:'rgba(248,113,113,0.1)', border:'rgba(248,113,113,0.3)' }
-  return { color:'#8B8A99', bg:'rgba(139,138,153,0.1)', border:'rgba(139,138,153,0.2)' }
+  if (s === 'Positive') return '#34D399'
+  if (s === 'Negative') return '#F87171'
+  return '#8B8A99'
 }
 
 export default function Calls() {
@@ -244,21 +246,15 @@ export default function Calls() {
                     {rows.map(c => (
                       <tr key={c.call_id} onClick={() => setSelected(c)}
                         style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer', background: selected?.call_id === c.call_id ? 'rgba(124,111,224,0.08)' : 'transparent', transition:'background 0.1s' }}>
-                        <td style={{ padding:'12px 16px' }}>
-                          {(() => {
-                            const m = getMotivoConfig(c.transcript, c.call_reason)
-                            if (!m) return <span style={{ fontSize:13, color:'#4A4960' }}>—</span>
-                            return <span style={{ fontSize:12, fontWeight:700, padding:'3px 10px', borderRadius:6, color:m.color, background:m.bg, border:`1px solid ${m.border}` }}>{m.label}</span>
-                          })()}
+                        <td style={{ padding:'12px 16px', fontSize:12, color:'#F1F0F5' }}>
+                          {getMotivoConfig(c.transcript, c.call_reason)?.label ?? <span style={{ color:'#4A4960' }}>—</span>}
                         </td>
                         <td style={{ padding:'12px 16px', fontSize:13, fontWeight:700, color: durationColor(c.duration_ms) }}>{fmtDuration(c.duration_ms)}</td>
                         <td style={{ padding:'12px 16px', fontSize:12, color:'#8B8A99' }}>{fmtDate(c.start_timestamp)}</td>
                         <td style={{ padding:'12px 16px' }}>
-                          <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', padding:'3px 10px', borderRadius:6,
-                            color: c.call_successful == null ? '#4A4960' : c.call_successful ? '#34D399' : '#F87171',
-                            background: c.call_successful == null ? 'transparent' : c.call_successful ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)',
-                            border: c.call_successful == null ? 'none' : `1px solid ${c.call_successful ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}` }}>
-                            {c.call_successful != null && <span style={{ width:6, height:6, borderRadius:'50%', background: c.call_successful ? '#34D399' : '#F87171', display:'inline-block' }}/>}
+                          <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:500,
+                            color: c.call_successful == null ? '#4A4960' : c.call_successful ? '#34D399' : '#F87171' }}>
+                            {c.call_successful != null && <span style={{ width:5, height:5, borderRadius:'50%', background: c.call_successful ? '#34D399' : '#F87171', display:'inline-block' }}/>}
                             {c.call_successful == null ? '—' : c.call_successful ? 'Efectiva' : 'Fallida'}
                           </span>
                         </td>
@@ -298,15 +294,19 @@ export default function Calls() {
                   <div style={{ fontSize:11, color:'#8B8A99', fontFamily:'monospace', marginTop:2 }}>{selected.from_number || '—'} → {selected.to_number || '—'}</div>
                 </div>
 
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', borderRadius:6, color: selected.direction === 'inbound' ? '#34D399' : '#9B8FEF', background: selected.direction === 'inbound' ? 'rgba(52,211,153,0.1)' : 'rgba(155,143,239,0.1)', border:`1px solid ${selected.direction === 'inbound' ? 'rgba(52,211,153,0.3)' : 'rgba(155,143,239,0.3)'}` }}>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:14 }}>
+                  <span style={{ fontSize:11, fontWeight:500, color:'#8B8A99' }}>
                     {selected.direction === 'inbound' ? 'Entrante' : 'Saliente'}
                   </span>
-                  {selected.user_sentiment && (() => { const sc = sentimentColor(selected.user_sentiment); return (
-                    <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', borderRadius:6, color:sc.color, background:sc.bg, border:`1px solid ${sc.border}` }}>{selected.user_sentiment}</span>
-                  )})()}
+                  {selected.user_sentiment && (
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, fontWeight:500, color: sentimentColor(selected.user_sentiment) }}>
+                      <span style={{ width:5, height:5, borderRadius:'50%', background: sentimentColor(selected.user_sentiment), display:'inline-block' }}/>
+                      {selected.user_sentiment}
+                    </span>
+                  )}
                   {selected.call_successful != null && (
-                    <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', padding:'3px 10px', borderRadius:6, color: selected.call_successful ? '#34D399' : '#F87171', background: selected.call_successful ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', border:`1px solid ${selected.call_successful ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}` }}>
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11, fontWeight:500, color: selected.call_successful ? '#34D399' : '#F87171' }}>
+                      <span style={{ width:5, height:5, borderRadius:'50%', background: selected.call_successful ? '#34D399' : '#F87171', display:'inline-block' }}/>
                       {selected.call_successful ? 'Éxito' : 'Fallo'}
                     </span>
                   )}

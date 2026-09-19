@@ -7,13 +7,34 @@ const icons: Record<string, React.ReactElement> = {
   phone: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.6 10.8a15.05 15.05 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.56.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02L6.6 10.8z"/></svg>,
   robot: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.2"/><circle cx="9" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1" fill="currentColor" stroke="none"/><path d="M9.5 17h5"/><path d="M4 12H2.5M21.5 12H20"/></svg>,
   calendar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+  wrench: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.9L4 16.5V20h3.5l5.3-5.3a4 4 0 0 0 4.9-5.4l-2.6 2.6-2-2 2.6-2.6Z"/></svg>,
+  trend: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 16 9.5 10.2 13.5 14 20 6.5"/><path d="M14.5 6.5H20V12"/></svg>,
+  chat: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-4 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z"/></svg>,
 }
 
-const nav = [
-  { to: '/', label: 'Inicio', end: true, icon: icons.home },
-  { to: '/agents', label: 'Mi Agente', icon: icons.robot },
-  { to: '/calls', label: 'Llamadas', icon: icons.phone },
-  { to: '/calendar', label: 'Calendario', icon: icons.calendar },
+const navGroups: { label: string; items: { to: string; label: string; end?: boolean; icon: React.ReactElement; tag?: string }[] }[] = [
+  {
+    label: 'Actividad',
+    items: [
+      { to: '/', label: 'Inicio', end: true, icon: icons.home },
+      { to: '/calls', label: 'Llamadas', icon: icons.phone },
+      { to: '/conversaciones', label: 'Conversaciones', icon: icons.chat, tag: 'WhatsApp' },
+      { to: '/calendar', label: 'Calendario', icon: icons.calendar },
+    ],
+  },
+  {
+    label: 'Gestión',
+    items: [
+      { to: '/agents', label: 'Mi Agente', icon: icons.robot },
+      { to: '/services', label: 'Servicios', icon: icons.wrench },
+    ],
+  },
+  {
+    label: 'Analítica',
+    items: [
+      { to: '/rentabilidad', label: 'Rentabilidad', icon: icons.trend },
+    ],
+  },
 ]
 
 export default function Sidebar() {
@@ -72,39 +93,49 @@ export default function Sidebar() {
       )}
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col gap-1 p-3">
-        {nav.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            style={({ isActive }) => isActive ? {
-              background: 'rgba(124,111,224,0.12)',
-              color: '#C4BCFF',
-              border: '1px solid rgba(124,111,224,0.28)',
-              borderRadius: '8px',
-              padding: '8px 12px',
-              fontSize: '12.5px',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              textDecoration: 'none',
-            } : {
-              color: '#8B8A99',
-              border: '1px solid transparent',
-              borderRadius: '8px',
-              padding: '8px 12px',
-              fontSize: '12.5px',
-              fontWeight: 400,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              textDecoration: 'none',
-            }}
-          >
-            <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}
-          </NavLink>
+      <nav className="flex flex-1 flex-col p-3" style={{ overflowY: 'auto' }}>
+        {navGroups.map((group, gi) => (
+          <div key={group.label} style={{ marginTop: gi === 0 ? 0 : 16 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 600, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '0 10px 6px' }}>
+              {group.label}
+            </div>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                style={({ isActive }) => isActive ? {
+                  background: 'rgba(124,111,224,0.12)',
+                  color: '#C4BCFF',
+                  border: '1px solid rgba(124,111,224,0.28)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  fontSize: '12.5px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  textDecoration: 'none',
+                  marginBottom: 1,
+                } : {
+                  color: '#8B8A99',
+                  border: '1px solid transparent',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  fontSize: '12.5px',
+                  fontWeight: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  textDecoration: 'none',
+                  marginBottom: 1,
+                }}
+              >
+                <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}
+                {item.tag && <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9B8FEF' }}>{item.tag}</span>}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 

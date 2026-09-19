@@ -1,5 +1,5 @@
 import React from 'react'
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -72,6 +72,7 @@ export default function Dashboard() {
   const tallerName = profile?.full_name || 'Mi taller'
   const [rawCalls, setRawCalls] = useState<CallLog[]>([])
   const [citasReales, setCitasReales] = useState(0)
+  const [apptDates, setApptDates] = useState<string[]>([])
   const [days, setDays] = useState(30)
   const [loading, setLoading] = useState(true)
   const [lastSync, setLastSync] = useState('')
@@ -100,6 +101,15 @@ export default function Dashboard() {
       .neq('status', 'cancelled')
       .gte('created_at', from)
       .then(({ count }) => setCitasReales(count ?? 0))
+
+    // Fechas de citas del periodo, para la serie "Citas" del gráfico
+    supabase
+      .from('appointments')
+      .select('appointment_date')
+      .eq('user_id', user.id)
+      .neq('status', 'cancelled')
+      .gte('appointment_date', from.split('T')[0])
+      .then(({ data }) => setApptDates((data ?? []).map((d: { appointment_date: string }) => d.appointment_date)))
   }, [user, days])
 
   const calls = rawCalls.length > 0 ? rawCalls : DEMO_CALLS
@@ -130,20 +140,32 @@ export default function Dashboard() {
   const sentimentTotal = positivas + neutras + negativas
   const sentPct = (n: number) => sentimentTotal > 0 ? Math.round((n / sentimentTotal) * 100) : 0
 
-  // Chart: llamadas por día
+  // Chart: llamadas y citas por día
   const chartData = (() => {
-    const map: Record<string, number> = {}
+    const map: Record<string, { calls: number; citas: number }> = {}
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(Date.now() - i * 86400000)
       const key = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-      map[key] = 0
+      map[key] = { calls: 0, citas: 0 }
     }
     calls.forEach(c => {
       if (!c.start_timestamp) return
       const key = new Date(c.start_timestamp).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-      if (key in map) map[key]++
+      if (key in map) map[key].calls++
     })
-    return Object.entries(map).map(([label, calls]) => ({ label, calls }))
+    if (isDemo) {
+      // En demo no hay fechas de citas reales: se deriva del mismo dataset de llamadas demo.
+      calls.filter(c => c.is_appointment).forEach(c => {
+        const key = new Date(c.start_timestamp).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        if (key in map) map[key].citas++
+      })
+    } else {
+      apptDates.forEach(dateStr => {
+        const key = new Date(`${dateStr}T00:00:00`).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        if (key in map) map[key].citas++
+      })
+    }
+    return Object.entries(map).map(([label, v]) => ({ label, calls: v.calls, citas: v.citas }))
   })()
 
   const tooltipStyle = { backgroundColor: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#F1F0F5', fontSize: 12 }
@@ -197,7 +219,7 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
         <div style={{ ...card }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5' }}>Llamadas por día · últimos {days} días</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5' }}>Llamadas y citas · últimos {days} días</div>
             {lastSync && <span style={{ fontSize: 10, color: '#4A4960' }}>Actualizado {lastSync}</span>}
           </div>
           <div style={{ height: 180 }}>
@@ -213,7 +235,13 @@ export default function Dashboard() {
                 <XAxis dataKey="label" stroke="#4A4960" fontSize={9} tickLine={false} interval={Math.floor(chartData.length / 6)} />
                 <YAxis stroke="#4A4960" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
+                <Legend
+                  verticalAlign="top" align="center" iconType="square" iconSize={8}
+                  wrapperStyle={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontFamily: 'inherit', paddingBottom: 8 }}
+                  formatter={(value) => (value === 'calls' ? 'Llamadas' : 'Citas')}
+                />
                 <Area type="monotone" dataKey="calls" stroke="#7C6FE0" strokeWidth={1.75} fill="url(#grad)" dot={false} />
+                <Area type="monotone" dataKey="citas" stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} strokeDasharray="4 3" fill="none" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

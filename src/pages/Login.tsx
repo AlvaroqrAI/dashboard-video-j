@@ -133,7 +133,7 @@ export default function Login() {
         )}
 
         <p style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: '#4A4960', textAlign: 'center' }}>
-          🔒 Acceso seguro · Tus datos están cifrados
+          Acceso seguro · Tus datos están cifrados
         </p>
       </div>
     </div>

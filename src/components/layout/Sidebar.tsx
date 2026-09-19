@@ -18,7 +18,7 @@ const navGroups: { label: string; items: { to: string; label: string; end?: bool
     items: [
       { to: '/', label: 'Inicio', end: true, icon: icons.home },
       { to: '/calls', label: 'Llamadas', icon: icons.phone },
-      { to: '/conversaciones', label: 'Conversaciones', icon: icons.chat, tag: 'WhatsApp' },
+      { to: '/conversaciones', label: 'Conversaciones', icon: icons.chat, tag: 'En desarrollo' },
       { to: '/calendar', label: 'Calendario', icon: icons.calendar },
     ],
   },
@@ -72,12 +72,11 @@ export default function Sidebar() {
       </div>
 
       {/* Taller badge */}
-      <div style={{ margin: '10px', padding: '10px 12px', background: 'rgba(124,111,224,0.08)', border: '1px solid rgba(124,111,224,0.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
-        <div style={{ width: 30, height: 30, borderRadius: '8px', background: 'rgba(124,111,224,0.15)', border: '1px solid rgba(124,111,224,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🔧</div>
+      <div style={{ margin: '10px', padding: '9px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '9px' }}>
+        <div style={{ width: 26, height: 26, borderRadius: '6px', background: '#131318', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B8A99', flexShrink: 0 }}>{icons.wrench}</div>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#F1F0F5' }}>{profile?.full_name || 'Mi taller'}</div>
-          <div style={{ fontSize: 10, color: '#34D399', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#F1F0F5' }}>{profile?.full_name || 'Mi taller'}</div>
+          <div style={{ fontSize: 10, color: '#4A4960', marginTop: 1 }}>
             Agente activo
           </div>
         </div>
@@ -144,7 +143,7 @@ export default function Sidebar() {
         {open && (
           <div style={{ position: 'absolute', bottom: '100%', left: 0, right: 0, background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', marginBottom: 4, overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#7C6FE0,#C4BCFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>{initials}</div>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#1B1B22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#8B8A99' }}>{initials}</div>
               <span style={{ fontSize: 11, color: '#8B8A99', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
             </div>
             <NavLink to="/settings" onClick={() => setOpen(false)} style={{ display: 'block', padding: '9px 14px', fontSize: 12, color: '#F1F0F5', textDecoration: 'none' }}>
@@ -158,7 +157,7 @@ export default function Sidebar() {
 
         <button type="button" onClick={() => setOpen(v => !v)}
           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer' }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#7C6FE0,#C4BCFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{initials}</div>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1B1B22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#8B8A99', flexShrink: 0 }}>{initials}</div>
           <span style={{ flex: 1, textAlign: 'left', fontSize: 11, color: '#8B8A99', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
           <span style={{ fontSize: 12, color: '#4A4960' }}>···</span>
         </button>

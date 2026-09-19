@@ -53,7 +53,9 @@ export default function Onboarding() {
 
         <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 300, height: 200, background: 'radial-gradient(rgba(124,111,224,0.2),transparent 65%)', pointerEvents: 'none' }} />
 
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔧</div>
+        <div style={{ width: 44, height: 44, margin: '0 auto 1rem', borderRadius: '10px', background: '#131318', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B8A99' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.9L4 16.5V20h3.5l5.3-5.3a4 4 0 0 0 4.9-5.4l-2.6 2.6-2-2 2.6-2.6Z"/></svg>
+        </div>
         <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F1F0F5', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
           Activa tu cuenta
         </h1>

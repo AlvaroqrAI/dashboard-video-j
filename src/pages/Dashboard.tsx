@@ -1,5 +1,5 @@
 import React from 'react'
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts'
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -13,6 +13,7 @@ interface CallLog {
   is_out_of_hours: boolean
   transcript: string | null
   call_reason?: string | null
+  user_sentiment?: string | null
 }
 
 function fmtDuration(ms: number) {
@@ -58,12 +59,12 @@ const statDeltaUp: React.CSSProperties = { ...statDelta, color: '#34D399' }
 
 // Demo data shown when Supabase has no real calls yet
 const DEMO_CALLS: CallLog[] = [
-  { call_id: 'd1', call_status: 'ended', duration_ms: 180000, start_timestamp: new Date(Date.now() - 3600000).toISOString(), is_appointment: true, is_out_of_hours: false, transcript: 'quiero pedir cita', call_reason: 'Pedir cita' },
-  { call_id: 'd2', call_status: 'ended', duration_ms: 60000, start_timestamp: new Date(Date.now() - 7200000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'consulta general', call_reason: 'Consulta general' },
-  { call_id: 'd3', call_status: 'ended', duration_ms: 90000, start_timestamp: new Date(Date.now() - 10800000).toISOString(), is_appointment: true, is_out_of_hours: true, transcript: 'pedir cita urgente', call_reason: 'Pedir cita' },
-  { call_id: 'd4', call_status: 'ended', duration_ms: 45000, start_timestamp: new Date(Date.now() - 14400000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'precio revisión', call_reason: 'Consulta precio' },
-  { call_id: 'd5', call_status: 'short', duration_ms: 12000, start_timestamp: new Date(Date.now() - 18000000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: null, call_reason: 'Consulta general' },
-  { call_id: 'd6', call_status: 'ended', duration_ms: 120000, start_timestamp: new Date(Date.now() - 21600000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'horario apertura', call_reason: 'Consulta horario' },
+  { call_id: 'd1', call_status: 'ended', duration_ms: 180000, start_timestamp: new Date(Date.now() - 3600000).toISOString(), is_appointment: true, is_out_of_hours: false, transcript: 'quiero pedir cita', call_reason: 'Pedir cita', user_sentiment: 'Positive' },
+  { call_id: 'd2', call_status: 'ended', duration_ms: 60000, start_timestamp: new Date(Date.now() - 7200000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'consulta general', call_reason: 'Consulta general', user_sentiment: 'Neutral' },
+  { call_id: 'd3', call_status: 'ended', duration_ms: 90000, start_timestamp: new Date(Date.now() - 10800000).toISOString(), is_appointment: true, is_out_of_hours: true, transcript: 'pedir cita urgente', call_reason: 'Pedir cita', user_sentiment: 'Positive' },
+  { call_id: 'd4', call_status: 'ended', duration_ms: 45000, start_timestamp: new Date(Date.now() - 14400000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'precio revisión', call_reason: 'Consulta precio', user_sentiment: 'Positive' },
+  { call_id: 'd5', call_status: 'short', duration_ms: 12000, start_timestamp: new Date(Date.now() - 18000000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: null, call_reason: 'Consulta general', user_sentiment: 'Negative' },
+  { call_id: 'd6', call_status: 'ended', duration_ms: 120000, start_timestamp: new Date(Date.now() - 21600000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'horario apertura', call_reason: 'Consulta horario', user_sentiment: 'Positive' },
 ]
 
 export default function Dashboard() {
@@ -81,7 +82,7 @@ export default function Dashboard() {
     const from = new Date(Date.now() - days * 86400000).toISOString()
     supabase
       .from('call_logs')
-      .select('call_id,call_status,duration_ms,start_timestamp,is_appointment,is_out_of_hours,transcript,call_reason')
+      .select('call_id,call_status,duration_ms,start_timestamp,is_appointment,is_out_of_hours,transcript,call_reason,user_sentiment')
       .eq('user_id', user.id)
       .gte('start_timestamp', from)
       .order('start_timestamp', { ascending: false })
@@ -122,15 +123,12 @@ export default function Dashboard() {
   })
   const reasons = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])
 
-  // Estado de llamadas
-  const completadas = calls.filter(c => c.call_status === 'ended' && (c.duration_ms || 0) > 30000).length
-  const transferidas = calls.filter(c => c.call_status === 'transferred').length
-  const cortas = calls.filter(c => (c.duration_ms || 0) <= 30000).length
-  const donutData = [
-    { name: 'Completadas', value: completadas || 1, color: '#34D399' },
-    { name: 'Transferidas', value: transferidas || 0, color: '#FBBF24' },
-    { name: 'Cortas', value: cortas || 0, color: '#4A4960' },
-  ].filter(d => d.value > 0)
+  // Sentimiento del cliente
+  const positivas = calls.filter(c => c.user_sentiment === 'Positive').length
+  const neutras = calls.filter(c => c.user_sentiment === 'Neutral').length
+  const negativas = calls.filter(c => c.user_sentiment === 'Negative').length
+  const sentimentTotal = positivas + neutras + negativas
+  const sentPct = (n: number) => sentimentTotal > 0 ? Math.round((n / sentimentTotal) * 100) : 0
 
   // Chart: llamadas por día
   const chartData = (() => {
@@ -262,38 +260,28 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Estado de llamadas — donut */}
-        <div style={{ ...card, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 8 }}>Estado de llamadas</div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={donutData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} dataKey="value" strokeWidth={0}>
-                  {donutData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Total en el centro */}
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#F1F0F5', lineHeight: 1 }}>{total}</div>
-              <div style={{ fontSize: 9, color: '#8B8A99', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>TOTAL</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-            {[
-              { label: 'Completadas', value: completadas, color: '#34D399' },
-              { label: 'Transferidas', value: transferidas, color: '#FBBF24' },
-              { label: 'Cortas', value: cortas, color: '#4A4960' },
-            ].map(s => (
-              <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8B8A99' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
-                  {s.label}
-                </span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5' }}>{s.value}</span>
+        {/* Sentimiento del cliente */}
+        <div style={{ ...card }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 4 }}>Sentimiento del cliente</div>
+          <div style={{ fontSize: 11, color: '#4A4960', marginBottom: 16 }}>Análisis de las conversaciones</div>
+          {[
+            { label: 'Positivo', value: positivas, color: '#34D399' },
+            { label: 'Neutro', value: neutras, color: '#8B8A99' },
+            { label: 'Negativo', value: negativas, color: '#F87171' },
+          ].map(s => (
+            <div key={s.label} style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 12, color: '#C4C3D0' }}>{s.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: s.color }}>{sentPct(s.value)}%</span>
               </div>
-            ))}
-          </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 999 }}>
+                <div style={{ height: '100%', width: `${sentPct(s.value)}%`, background: s.color, borderRadius: 999, transition: 'width 0.6s ease' }} />
+              </div>
+            </div>
+          ))}
+          {sentimentTotal === 0 && (
+            <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '12px 0' }}>Sin datos de sentimiento todavía</div>
+          )}
         </div>
 
         {/* Actividad reciente */}

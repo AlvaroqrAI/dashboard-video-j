@@ -26,7 +26,9 @@ export default function DashboardLayout() {
       <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
         <Topbar />
         <main style={{ flex: 1, overflowY: 'auto', background: '#0D0E14', padding: '20px 24px' }}>
-          <Outlet />
+          <div key={location.pathname} className="page-transition">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

@@ -25,19 +25,9 @@ export default function Conversaciones() {
           Mismo motor que Sara — mismos servicios, disponibilidad y calendario — en un canal de texto. Pensado para clientes que prefieren escribir antes que llamar.
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ padding: '14px 4px 0', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ fontSize: 10, color: '#4A4960', marginBottom: 6 }}>Lanzamiento previsto</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#F1F0F5' }}>Finales de septiembre</div>
-          </div>
-          <div style={{ padding: '14px 4px 0', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ fontSize: 10, color: '#4A4960', marginBottom: 6 }}>Motivo</div>
-            <div style={{ fontSize: 11.5, color: '#8B8A99' }}>Junta anual Driver, 320 talleres</div>
-          </div>
-          <div style={{ padding: '14px 4px 0' }}>
-            <div style={{ fontSize: 10, color: '#4A4960', marginBottom: 6 }}>Bloqueo actual</div>
-            <div style={{ fontSize: 11.5, color: '#FBBF24' }}>Verificación de Meta Business</div>
-          </div>
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', opacity: 0.5 }}>
+          <div style={{ fontSize: 10, color: '#4A4960', marginBottom: 6 }}>Lanzamiento previsto</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#F1F0F5' }}>Finales de septiembre</div>
         </div>
       </Card>
     </div>

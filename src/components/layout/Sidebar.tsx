@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { NavLink, Link, useNavigate } from 'react-router-dom'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 
 const icons: Record<string, React.ReactElement> = {
@@ -40,8 +40,11 @@ const navGroups: { label: string; items: { to: string; label: string; end?: bool
 export default function Sidebar() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const navRef = useRef<HTMLElement>(null)
+  const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -50,6 +53,15 @@ export default function Sidebar() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useLayoutEffect(() => {
+    const navEl = navRef.current
+    const activeEl = navEl?.querySelector<HTMLElement>('a[aria-current="page"]')
+    if (!navEl || !activeEl) { setIndicator(null); return }
+    const navRect = navEl.getBoundingClientRect()
+    const elRect = activeEl.getBoundingClientRect()
+    setIndicator({ top: elRect.top - navRect.top + navEl.scrollTop, height: elRect.height })
+  }, [location.pathname])
 
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? '??'
 
@@ -92,7 +104,22 @@ export default function Sidebar() {
       )}
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col p-3" style={{ overflowY: 'auto' }}>
+      <nav ref={navRef} className="flex flex-1 flex-col p-3" style={{ overflowY: 'auto', position: 'relative' }}>
+        {indicator && (
+          <div style={{
+            position: 'absolute',
+            left: 12,
+            right: 12,
+            top: indicator.top,
+            height: indicator.height,
+            background: 'rgba(124,111,224,0.12)',
+            border: '1px solid rgba(124,111,224,0.28)',
+            borderRadius: 8,
+            transition: 'top 220ms cubic-bezier(0.4,0,0.2,1), height 220ms cubic-bezier(0.4,0,0.2,1)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+        )}
         {navGroups.map((group, gi) => (
           <div key={group.label} style={{ marginTop: gi === 0 ? 0 : 16 }}>
             <div style={{ fontSize: 9.5, fontWeight: 600, color: '#4A4960', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '0 10px 6px' }}>
@@ -104,9 +131,11 @@ export default function Sidebar() {
                 to={item.to}
                 end={item.end}
                 style={({ isActive }) => isActive ? {
-                  background: 'rgba(124,111,224,0.12)',
+                  position: 'relative',
+                  zIndex: 1,
+                  background: 'transparent',
                   color: '#C4BCFF',
-                  border: '1px solid rgba(124,111,224,0.28)',
+                  border: '1px solid transparent',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   fontSize: '12.5px',
@@ -116,7 +145,10 @@ export default function Sidebar() {
                   gap: '8px',
                   textDecoration: 'none',
                   marginBottom: 1,
+                  transition: 'color 150ms ease',
                 } : {
+                  position: 'relative',
+                  zIndex: 1,
                   color: '#8B8A99',
                   border: '1px solid transparent',
                   borderRadius: '8px',
@@ -128,6 +160,7 @@ export default function Sidebar() {
                   gap: '8px',
                   textDecoration: 'none',
                   marginBottom: 1,
+                  transition: 'color 150ms ease',
                 }}
               >
                 <span style={{ opacity: 0.7, display: 'flex', alignItems: 'center' }}>{item.icon}</span>{item.label}

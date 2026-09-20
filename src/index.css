@@ -77,3 +77,27 @@ body {
 .page-transition {
   animation: page-fade-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.skeleton {
+  background: #1E1F2B;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.toast-enter {
+  animation: toast-in 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}

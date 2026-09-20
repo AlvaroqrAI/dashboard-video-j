@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { PageHeader } from '@/components/ui/Card'
+import { SkeletonTableRows } from '@/components/ui/Skeleton'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 
@@ -108,6 +110,9 @@ export default function Calls() {
   const [filters, setFilters] = useState<Filters>(emptyFilters)
   const [applied, setApplied] = useState<Filters>(emptyFilters)
   const [apptInfo, setApptInfo] = useState<Record<string, ApptInfo>>({})
+  const [showDateMenu, setShowDateMenu] = useState(false)
+  const [hoverInfo, setHoverInfo] = useState<{ phone: string; x: number; y: number } | null>(null)
+  const dateMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!user) return
@@ -185,6 +190,35 @@ export default function Calls() {
   const goPrev = () => { if (selectedIndex > 0) setSelected(rows[selectedIndex - 1]) }
   const goNext = () => { if (selectedIndex >= 0 && selectedIndex < rows.length - 1) setSelected(rows[selectedIndex + 1]) }
 
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dateMenuRef.current && !dateMenuRef.current.contains(e.target as Node)) setShowDateMenu(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  function applyDatePreset(days: number | 'month' | null) {
+    if (days === null) { setFilters(f => ({ ...f, dateFrom: '', dateTo: '' })); setShowDateMenu(false); return }
+    const to = new Date()
+    const from = days === 'month' ? new Date(to.getFullYear(), to.getMonth(), 1) : new Date(Date.now() - days * 86400000)
+    setFilters(f => ({ ...f, dateFrom: from.toISOString().split('T')[0], dateTo: to.toISOString().split('T')[0] }))
+    setShowDateMenu(false)
+  }
+
+  function dateRangeLabel() {
+    const short = (d: string) => d.split('-').reverse().slice(0, 2).join('/')
+    if (!filters.dateFrom && !filters.dateTo) return 'Todo el histórico'
+    if (filters.dateFrom && filters.dateTo) return `${short(filters.dateFrom)} – ${short(filters.dateTo)}`
+    if (filters.dateFrom) return `Desde ${short(filters.dateFrom)}`
+    return `Hasta ${short(filters.dateTo)}`
+  }
+
+  const phoneHistory = useMemo(() => {
+    if (!hoverInfo) return []
+    return rows.filter(r => r.from_number === hoverInfo.phone)
+  }, [hoverInfo, rows])
+
   const activeFilters = useMemo(() => Object.values(filters).some(v => v !== ''), [filters])
   const hasNext = rows.length === PAGE_SIZE
   const rangeStart = count === 0 ? 0 : page * PAGE_SIZE + 1
@@ -256,19 +290,51 @@ export default function Calls() {
             <span style={lbl}>Nº destino</span>
             <input style={inp} value={filters.toNumber} onChange={e => setFilter('toNumber', e.target.value)} placeholder="+34…" />
           </div>
-          <div>
-            <span style={lbl}>Desde</span>
-            <input type="date" style={inp} value={filters.dateFrom} max={filters.dateTo || undefined} onChange={e => setFilter('dateFrom', e.target.value)} />
-          </div>
-          <div>
-            <span style={lbl}>Hasta</span>
-            <input type="date" style={inp} value={filters.dateTo} min={filters.dateFrom || undefined} onChange={e => setFilter('dateTo', e.target.value)} />
+          <div style={{ gridColumn:'span 2', position:'relative' }} ref={dateMenuRef}>
+            <span style={lbl}>Fecha</span>
+            <button type="button" onClick={() => setShowDateMenu(v => !v)}
+              style={{ ...inp, display:'flex', alignItems:'center', gap:8, cursor:'pointer', textAlign:'left' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, opacity:0.6 }}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              {dateRangeLabel()}
+            </button>
+
+            {showDateMenu && (
+              <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:30, background:'#1E1F2B', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:14, width:280, boxShadow:'0 12px 32px rgba(0,0,0,0.4)' }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:2, marginBottom:12 }}>
+                  {[
+                    { label:'Todo el histórico', action: () => applyDatePreset(null) },
+                    { label:'Hoy', action: () => applyDatePreset(0) },
+                    { label:'Últimos 7 días', action: () => applyDatePreset(7) },
+                    { label:'Últimos 30 días', action: () => applyDatePreset(30) },
+                    { label:'Últimos 90 días', action: () => applyDatePreset(90) },
+                    { label:'Este mes', action: () => applyDatePreset('month') },
+                  ].map(opt => (
+                    <button key={opt.label} type="button" onClick={opt.action}
+                      style={{ textAlign:'left', background:'none', border:'none', borderRadius:6, padding:'7px 9px', fontSize:12, color:'#F1F0F5', cursor:'pointer', fontFamily:'inherit' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:12, display:'flex', gap:8 }}>
+                  <div style={{ flex:1 }}>
+                    <span style={{ ...lbl, marginBottom:4 }}>Desde</span>
+                    <input type="date" style={{ ...inp, padding:'6px 8px', fontSize:11 }} value={filters.dateFrom} max={filters.dateTo || undefined} onChange={e => setFilter('dateFrom', e.target.value)} />
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <span style={{ ...lbl, marginBottom:4 }}>Hasta</span>
+                    <input type="date" style={{ ...inp, padding:'6px 8px', fontSize:11 }} value={filters.dateTo} min={filters.dateFrom || undefined} onChange={e => setFilter('dateTo', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {loading && rows.length === 0 ? (
-        <div style={{ fontSize:12, color:'#4A4960', padding:'24px 0' }}>Cargando…</div>
+        <SkeletonTableRows rows={8} cols={7} />
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
 
@@ -295,7 +361,9 @@ export default function Calls() {
                       <td style={{ padding:'12px 16px', fontSize:12, color:'#F1F0F5' }}>
                         {motivo ?? <span style={{ color:'#4A4960' }}>—</span>}
                       </td>
-                      <td style={{ padding:'12px 16px' }}>
+                      <td style={{ padding:'12px 16px' }}
+                        onMouseEnter={e => { if (c.from_number) { const r = e.currentTarget.getBoundingClientRect(); setHoverInfo({ phone: c.from_number, x: r.left, y: r.bottom + 6 }) } }}
+                        onMouseLeave={() => setHoverInfo(null)}>
                         <div style={{ fontSize:12, color:'#F1F0F5', fontFamily:'monospace' }}>{c.from_number || '—'}</div>
                         {appt?.name && <div style={{ fontSize:11, color:'#8B8A99', marginTop:2 }}>{appt.name}</div>}
                       </td>
@@ -315,9 +383,11 @@ export default function Calls() {
                         </span>
                       </td>
                       <td style={{ padding:'12px 16px' }}>
-                        <button type="button" aria-label="Ver detalle" onClick={e => { e.stopPropagation(); setSelected(c) }} style={iconBtn}>
-                          {detailIcon}
-                        </button>
+                        <Tooltip label="Ver detalle">
+                          <button type="button" aria-label="Ver detalle" onClick={e => { e.stopPropagation(); setSelected(c) }} style={iconBtn}>
+                            {detailIcon}
+                          </button>
+                        </Tooltip>
                       </td>
                     </tr>
                     )
@@ -326,6 +396,23 @@ export default function Calls() {
               </table>
             )}
           </div>
+
+          {/* Hover card: historial de este número en la página actual */}
+          {hoverInfo && phoneHistory.length > 1 && (
+            <div style={{ position:'fixed', left: hoverInfo.x, top: hoverInfo.y, zIndex:40, background:'#1E1F2B', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:12, width:260, boxShadow:'0 12px 32px rgba(0,0,0,0.4)', pointerEvents:'none' }}>
+              <div style={{ fontSize:10, fontWeight:600, color:'#4A4960', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>
+                {phoneHistory.length} llamadas de este número (en esta página)
+              </div>
+              {phoneHistory.slice(0, 4).map(h => (
+                <div key={h.call_id} style={{ display:'flex', justifyContent:'space-between', gap:8, padding:'5px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', fontSize:11.5 }}>
+                  <span style={{ color:'#C4C3D0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {apptInfo[h.call_id]?.reason || getMotivoConfig(h.transcript, h.call_reason)?.label || 'Sin motivo'}
+                  </span>
+                  <span style={{ color:'#4A4960', flexShrink:0 }}>{fmtDate(h.start_timestamp)}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Paginación */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -365,11 +452,17 @@ export default function Calls() {
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
                 <span style={{ fontSize:11, color:'#4A4960', minWidth:44, textAlign:'center' }}>{selectedIndex + 1} de {rows.length}</span>
-                <button type="button" aria-label="Anterior" onClick={goPrev} disabled={selectedIndex <= 0}
-                  style={{ ...iconBtn, opacity: selectedIndex <= 0 ? 0.3 : 1 }}>‹</button>
-                <button type="button" aria-label="Siguiente" onClick={goNext} disabled={selectedIndex >= rows.length - 1}
-                  style={{ ...iconBtn, opacity: selectedIndex >= rows.length - 1 ? 0.3 : 1 }}>›</button>
-                <button type="button" aria-label="Cerrar" onClick={() => setSelected(null)} style={iconBtn}>✕</button>
+                <Tooltip label="Llamada anterior">
+                  <button type="button" aria-label="Anterior" onClick={goPrev} disabled={selectedIndex <= 0}
+                    style={{ ...iconBtn, opacity: selectedIndex <= 0 ? 0.3 : 1 }}>‹</button>
+                </Tooltip>
+                <Tooltip label="Llamada siguiente">
+                  <button type="button" aria-label="Siguiente" onClick={goNext} disabled={selectedIndex >= rows.length - 1}
+                    style={{ ...iconBtn, opacity: selectedIndex >= rows.length - 1 ? 0.3 : 1 }}>›</button>
+                </Tooltip>
+                <Tooltip label="Cerrar">
+                  <button type="button" aria-label="Cerrar" onClick={() => setSelected(null)} style={iconBtn}>✕</button>
+                </Tooltip>
               </div>
             </div>
 

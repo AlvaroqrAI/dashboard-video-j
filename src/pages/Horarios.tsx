@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { PageHeader, Card } from '@/components/ui/Card'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 
@@ -71,7 +72,10 @@ export default function Horarios() {
       </div>
 
       {loading ? (
-        <div style={{ fontSize: 12, color: '#4A4960', padding: '24px 0' }}>Cargando…</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <SkeletonCard height={260} />
+          <SkeletonCard height={260} />
+        </div>
       ) : total === 0 ? (
         <Card style={{ textAlign: 'center', padding: '40px 20px' }}>
           <p style={{ fontSize: 12, color: '#4A4960' }}>Todavía no hay llamadas en los últimos {DAYS} días para analizar.</p>

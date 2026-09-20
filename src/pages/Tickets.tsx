@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { PageHeader, Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/context/ToastContext'
+import { SkeletonStatRow, SkeletonTableRows } from '@/components/ui/Skeleton'
 
 interface Ticket {
   id: string
@@ -36,6 +38,7 @@ function fmtDate(iso: string) {
 
 export default function Tickets() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,6 +74,7 @@ export default function Tickets() {
     if (error) { setError(error.message); return }
     if (data) setTickets(t => [data as Ticket, ...t])
     setSubject(''); setMessage(''); setShowForm(false)
+    showToast('Ticket creado — te responderemos en breve')
   }
 
   const counts = useMemo(() => ({
@@ -107,6 +111,13 @@ export default function Tickets() {
         <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 10, padding: '10px 16px', fontSize: 12, color: '#F87171' }}>{error}</div>
       )}
 
+      {loading ? (
+        <>
+          <SkeletonStatRow />
+          <SkeletonTableRows rows={5} cols={4} />
+        </>
+      ) : (
+        <>
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#181922', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
         <div style={statBox}>
@@ -131,9 +142,6 @@ export default function Tickets() {
         </div>
       </div>
 
-      {loading ? (
-        <div style={{ fontSize: 12, color: '#4A4960', padding: '24px 0' }}>Cargando…</div>
-      ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, alignItems: 'start' }}>
 
           {/* Filtros */}
@@ -192,6 +200,7 @@ export default function Tickets() {
             )}
           </Card>
         </div>
+        </>
       )}
 
       {/* Modal nueva solicitud */}

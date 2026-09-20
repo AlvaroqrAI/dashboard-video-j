@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { PageHeader, Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/context/ToastContext'
 import { TICKET_MEDIO, PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL } from '@/lib/constants'
 
 interface ApptForRoi {
@@ -43,6 +44,7 @@ const PLANES_DISPONIBLES = [249, 299]
 
 export default function Rentabilidad() {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [rawAppts, setRawAppts] = useState<ApptForRoi[]>([])
   const [loading, setLoading] = useState(true)
   const [planPrice, setPlanPrice] = useState<number>(PLAN_MENSUAL)
@@ -80,6 +82,7 @@ export default function Rentabilidad() {
     if (!user) return
     supabase.from('profiles').update({ plan_price: price }).eq('id', user.id).then(({ error }) => {
       if (error) console.warn('No se pudo guardar el plan seleccionado (¿falta aplicar la migración 0010?):', error.message)
+      else showToast(`Plan actualizado a ${price} €/mes`)
     })
   }
 

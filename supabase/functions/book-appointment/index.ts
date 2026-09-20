@@ -9,7 +9,10 @@ Deno.serve(async (req) => {
   // Retell envía { call: { agent_id, call_id, ... }, client_name, client_phone, ... }
   const agent_id: string | undefined = body?.call?.agent_id
   const call_id: string | undefined = body?.call?.call_id
-  const { client_name, client_phone, car_model, plate, reason, date, time } = body
+  const { client_name, client_phone, car_model, reason, date, time } = body
+  // Normalizada (sin espacios/guiones, mayúsculas) para que "1234 BCD" y "1234-bcd"
+  // reconozcan el mismo vehículo.
+  const plate: string | undefined = body?.plate ? String(body.plate).toUpperCase().replace(/[\s-]/g, '') : undefined
 
   console.log('[book-appointment]', { agent_id, call_id, client_name, date, time })
 
@@ -76,6 +79,21 @@ Deno.serve(async (req) => {
       .from('call_logs')
       .update({ is_appointment: true })
       .eq('call_id', call_id)
+  }
+
+  // Reconocimiento de vehículo: si hay matrícula, guarda/actualiza el registro
+  // persistente para que la próxima vez que llame ya se le reconozca.
+  if (plate) {
+    await admin
+      .from('vehicles')
+      .upsert({
+        user_id: agentRow.user_id,
+        plate,
+        car_model: car_model ?? null,
+        client_name: client_name ?? null,
+        client_phone: client_phone ?? null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,plate' })
   }
 
   return json({

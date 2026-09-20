@@ -26,6 +26,7 @@ import Conversaciones from '@/pages/Conversaciones'
 import Horarios from '@/pages/Horarios'
 import Tickets from '@/pages/Tickets'
 import Talleres from '@/pages/Talleres'
+import Reparaciones from '@/pages/Reparaciones'
 
 // Admin
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -80,6 +81,7 @@ export default function App() {
                   <Route path="horarios" element={<Horarios />} />
                   <Route path="tickets" element={<Tickets />} />
                   <Route path="talleres" element={<Talleres />} />
+                  <Route path="reparaciones" element={<Reparaciones />} />
                 </Route>
               </Route>
             </Route>

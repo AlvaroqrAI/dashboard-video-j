@@ -36,6 +36,8 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+const STATUS_ORDER: Ticket['status'][] = ['open', 'in_progress', 'closed']
+
 export default function Tickets() {
   const { user } = useAuth()
   const { showToast } = useToast()
@@ -48,6 +50,9 @@ export default function Tickets() {
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [view, setView] = useState<'list' | 'board'>('list')
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<Ticket['status'] | null>(null)
 
   const load = () => {
     if (!user) return
@@ -86,9 +91,32 @@ export default function Tickets() {
 
   const resolvedPct = counts.all > 0 ? Math.round((counts.closed / counts.all) * 100) : 0
 
-  const visible = tickets
-    .filter(t => filter === 'all' || t.status === filter)
-    .filter(t => !search.trim() || t.subject.toLowerCase().includes(search.trim().toLowerCase()))
+  const searched = tickets.filter(t => !search.trim() || t.subject.toLowerCase().includes(search.trim().toLowerCase()))
+
+  const visible = searched.filter(t => filter === 'all' || t.status === filter)
+
+  const byStatus = useMemo(() => {
+    const map: Record<Ticket['status'], Ticket[]> = { open: [], in_progress: [], closed: [] }
+    searched.forEach(t => map[t.status].push(t))
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickets, search])
+
+  async function moveTicket(id: string, newStatus: Ticket['status']) {
+    const ticket = tickets.find(t => t.id === id)
+    if (!ticket || ticket.status === newStatus) return
+    const prevStatus = ticket.status
+    setTickets(ts => ts.map(t => t.id === id ? { ...t, status: newStatus } : t))
+    const { error } = await supabase.from('tickets')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) {
+      setTickets(ts => ts.map(t => t.id === id ? { ...t, status: prevStatus } : t))
+      showToast('No se pudo mover el ticket', 'error')
+    } else {
+      showToast(`Movido a "${STATUS_LABEL[newStatus]}"`)
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -97,6 +125,17 @@ export default function Tickets() {
         subtitle="Consulta tus solicitudes anteriores y abre tickets nuevos para el equipo."
         action={
           <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 2 }}>
+              {([['list', 'Lista'], ['board', 'Tablero']] as [typeof view, string][]).map(([v, label]) => (
+                <button key={v} type="button" onClick={() => setView(v)}
+                  style={{
+                    padding: '6px 12px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                    background: view === v ? '#7C6FE0' : 'transparent', color: view === v ? '#fff' : '#8B8A99',
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
             <button type="button" onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, color: '#F1F0F5', cursor: 'pointer', fontFamily: 'inherit' }}>
               Actualizar
             </button>
@@ -142,6 +181,7 @@ export default function Tickets() {
         </div>
       </div>
 
+        {view === 'list' && (
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12, alignItems: 'start' }}>
 
           {/* Filtros */}
@@ -200,6 +240,47 @@ export default function Tickets() {
             )}
           </Card>
         </div>
+        )}
+
+        {view === 'board' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por asunto…"
+              style={{ alignSelf: 'flex-end', background: '#181922', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#F1F0F5', fontFamily: 'inherit', outline: 'none', minWidth: 220 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, alignItems: 'start' }}>
+              {STATUS_ORDER.map(status => (
+                <div key={status}
+                  onDragOver={e => { e.preventDefault(); setDragOverCol(status) }}
+                  onDragLeave={() => setDragOverCol(c => (c === status ? null : c))}
+                  onDrop={() => { if (dragId) moveTicket(dragId, status); setDragId(null); setDragOverCol(null) }}
+                  style={{
+                    background: '#131318', borderRadius: 12, padding: 10, minHeight: 200, display: 'flex', flexDirection: 'column', gap: 8,
+                    border: dragOverCol === status ? '1px dashed #7C6FE0' : '1px solid rgba(255,255,255,0.06)', transition: 'border-color 0.1s',
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 4px 6px' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_COLOR[status] }} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#F1F0F5', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{STATUS_LABEL[status]}</span>
+                    <span style={{ fontSize: 11, color: '#4A4960', marginLeft: 'auto' }}>{byStatus[status].length}</span>
+                  </div>
+                  {byStatus[status].length === 0 ? (
+                    <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '24px 0' }}>Sin tickets</div>
+                  ) : byStatus[status].map(t => (
+                    <div key={t.id} draggable
+                      onDragStart={() => setDragId(t.id)}
+                      onDragEnd={() => { setDragId(null); setDragOverCol(null) }}
+                      style={{
+                        background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 12px',
+                        cursor: 'grab', opacity: dragId === t.id ? 0.4 : 1,
+                      }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#F1F0F5', marginBottom: 4 }}>{t.subject}</div>
+                      <div style={{ fontSize: 11, color: '#8B8A99', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{t.message}</div>
+                      <div style={{ fontSize: 10, color: '#4A4960' }}>{fmtDate(t.created_at)}</div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         </>
       )}
 

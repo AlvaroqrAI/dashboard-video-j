@@ -147,7 +147,11 @@ export default function Agents() {
                     const el = e.currentTarget
                     el.style.display = 'none'
                     if (el.parentElement) {
-                      el.parentElement.innerHTML = `<span style="font-size:40px;font-weight:800;color:#fff">${getInitials(agent.name)}</span>`
+                      // textContent, no innerHTML: el nombre del agente no se interpreta como HTML.
+                      const span = document.createElement('span')
+                      span.style.cssText = 'font-size:40px;font-weight:800;color:#fff'
+                      span.textContent = getInitials(agent.name)
+                      el.parentElement.replaceChildren(span)
                     }
                   }}
                 />

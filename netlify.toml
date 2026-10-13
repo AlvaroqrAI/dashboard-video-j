@@ -9,6 +9,21 @@
   to = "/index.html"
   status = 200
 
+# Cabeceras de seguridad para todo el sitio. Sin CSP de momento: carga Stripe,
+# Google y Supabase y una CSP mal ajustada rompería el login o el pago.
+#  - X-Frame-Options / frame-ancestors: nadie puede incrustar el panel en un
+#    iframe (clickjacking).
+#  - nosniff, Referrer-Policy y Permissions-Policy: valores estándar; el panel
+#    no usa cámara, micrófono ni geolocalización.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
 # Variables de entorno necesarias en el panel de Netlify (Site settings → Env):
 #   VITE_SUPABASE_URL
 #   VITE_SUPABASE_PUBLISHABLE_KEY

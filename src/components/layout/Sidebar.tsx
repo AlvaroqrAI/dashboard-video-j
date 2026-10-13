@@ -1,6 +1,7 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useLayoutEffect, useRef, useState } from 'react'
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { Tooltip } from '@/components/ui/Tooltip'
 
 const icons: Record<string, React.ReactElement> = {
   home: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
@@ -62,18 +63,8 @@ export default function Sidebar() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLElement>(null)
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
 
   useLayoutEffect(() => {
     const navEl = navRef.current
@@ -84,10 +75,11 @@ export default function Sidebar() {
     setIndicator({ top: elRect.top - navRect.top + navEl.scrollTop, height: elRect.height })
   }, [location.pathname])
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? '??'
+  const displayName = profile?.full_name || user?.email || 'Usuario'
+  const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '??'
+  const roleLabel = profile?.role === 'admin' ? 'Administrador' : 'Cliente'
 
   async function handleSignOut() {
-    setOpen(false)
     await signOut()
     navigate('/login')
   }
@@ -225,28 +217,18 @@ export default function Sidebar() {
       </nav>
 
       {/* Usuario */}
-      <div ref={ref} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
-        {open && (
-          <div style={{ position: 'absolute', bottom: '100%', left: 0, right: 0, background: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', marginBottom: 4, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#1B1B22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#8B8A99' }}>{initials}</div>
-              <span style={{ fontSize: 11, color: '#8B8A99', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
-            </div>
-            <NavLink to="/settings" onClick={() => setOpen(false)} style={{ display: 'block', padding: '9px 14px', fontSize: 12, color: '#F1F0F5', textDecoration: 'none' }}>
-              Ajustes
-            </NavLink>
-            <button type="button" onClick={handleSignOut} style={{ width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 12, color: '#F87171', background: 'none', border: 'none', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              Cerrar sesión
-            </button>
-          </div>
-        )}
-
-        <button type="button" onClick={() => setOpen(v => !v)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer' }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1B1B22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#8B8A99', flexShrink: 0 }}>{initials}</div>
-          <span style={{ flex: 1, textAlign: 'left', fontSize: 11, color: '#8B8A99', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
-          <span style={{ fontSize: 12, color: '#4A4960' }}>···</span>
-        </button>
+      <div title={user?.email} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1B1B22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#8B8A99', flexShrink: 0 }}>{initials}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#F1F0F5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+          <div style={{ fontSize: 10.5, color: '#4A4960', marginTop: 1 }}>{roleLabel}</div>
+        </div>
+        <Tooltip label="Cerrar sesión">
+          <button type="button" aria-label="Cerrar sesión" onClick={handleSignOut}
+            style={{ width: 28, height: 28, borderRadius: 8, background: 'none', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#8B8A99', cursor: 'pointer' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          </button>
+        </Tooltip>
       </div>
     </aside>
   )

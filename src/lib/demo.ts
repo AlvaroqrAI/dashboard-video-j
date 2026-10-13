@@ -1,7 +1,8 @@
 // Modo demo: permite navegar la estructura sin Supabase/Stripe/Retell reales.
-// Se activa con VITE_DEMO_MODE=true (por defecto en desarrollo).
-export const DEMO_MODE =
-  (import.meta.env.VITE_DEMO_MODE as string | undefined) !== 'false'
+// Se activa con VITE_DEMO_MODE=true. Si la variable no está definida, solo se activa en
+// desarrollo (npm run dev): un build de producción sin la variable NUNCA arranca en demo.
+const demoFlag = import.meta.env.VITE_DEMO_MODE as string | undefined
+export const DEMO_MODE = demoFlag === 'true' || (demoFlag === undefined && import.meta.env.DEV)
 
 export type Role = 'admin' | 'client'
 

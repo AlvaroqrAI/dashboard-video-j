@@ -3,6 +3,8 @@ import { PageHeader, Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
+import { DEMO_MODE } from '@/lib/demo'
+import { useBusinessHours, isApptOutOfHours } from '@/lib/businessHours'
 import { TICKET_MEDIO, PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL } from '@/lib/constants'
 
 interface ApptForRoi {
@@ -10,14 +12,7 @@ interface ApptForRoi {
   appointment_time: string // HH:mm:ss
 }
 
-// Fuera de horario: mismo criterio que Dashboard.tsx (L-V 07:00–15:00, fin de semana = fuera).
-function isApptOutOfHours(a: ApptForRoi): boolean {
-  const dow = new Date(`${a.appointment_date}T00:00:00`).getDay()
-  if (dow === 0 || dow === 6) return true
-  const hour = parseInt(a.appointment_time.slice(0, 2), 10)
-  return hour < 7 || hour >= 15
-}
-
+// Solo en modo demo local (VITE_DEMO_MODE): una cuenta real sin citas ve ceros.
 const DEMO_APPTS: ApptForRoi[] = [
   { appointment_date: '2026-08-03', appointment_time: '09:00' },
   { appointment_date: '2026-08-04', appointment_time: '10:30' },
@@ -45,6 +40,7 @@ const PLANES_DISPONIBLES = [249, 299]
 export default function Rentabilidad() {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const { hours } = useBusinessHours()
   const [rawAppts, setRawAppts] = useState<ApptForRoi[]>([])
   const [loading, setLoading] = useState(true)
   const [planPrice, setPlanPrice] = useState<number>(PLAN_MENSUAL)
@@ -86,12 +82,12 @@ export default function Rentabilidad() {
     })
   }
 
-  const appts = rawAppts.length > 0 ? rawAppts : DEMO_APPTS
-  const isDemo = rawAppts.length === 0
+  const isDemo = DEMO_MODE && rawAppts.length === 0
+  const appts = isDemo ? DEMO_APPTS : rawAppts
 
   const citas = appts.length
   const ingresoMensual = citas * TICKET_MEDIO
-  const fueraCitas = appts.filter(isApptOutOfHours).length
+  const fueraCitas = appts.filter(a => isApptOutOfHours(a.appointment_date, a.appointment_time, hours)).length
   const valorFueraHorario = fueraCitas * TICKET_MEDIO
   const costePorCita = citas > 0 ? planPrice / citas : null
   const ahorroAnual = (COSTE_SECRETARIA_ANUAL / 12 - planPrice) * 12
@@ -130,6 +126,12 @@ export default function Rentabilidad() {
       {isDemo && !loading && (
         <div style={{ fontSize: 11, color: '#FBBF24', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 8, padding: '6px 12px', display: 'inline-flex', alignSelf: 'flex-start' }}>
           Datos demo — se sustituyen por tus citas reales en cuanto Sara empiece a agendar
+        </div>
+      )}
+
+      {!isDemo && !loading && citas === 0 && (
+        <div style={{ fontSize: 11.5, color: '#8B8A99', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '8px 12px', alignSelf: 'flex-start' }}>
+          Todavía no hay citas en los últimos 30 días. Las cifras de ingresos y coste por cita se calcularán en cuanto el agente agende las primeras.
         </div>
       )}
 
@@ -188,7 +190,7 @@ export default function Rentabilidad() {
               <strong style={{ color: '#F1F0F5' }}>Ahorro anual:</strong> coste medio de una recepcionista a jornada completa en España (27.000 €/año) menos tu cuota de MecanIA ({planPrice} €/mes).
             </div>
             <div>
-              <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> citas cerradas por Sara fuera del horario habitual del taller (antes de las 7h, después de las 15h, o en fin de semana) × ticket medio ({TICKET_MEDIO} €).
+              <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> citas cerradas por Sara fuera del horario de tu taller (el que defines en Ajustes) × ticket medio ({TICKET_MEDIO} €).
             </div>
             <div>
               <strong style={{ color: '#F1F0F5' }}>Facturación proyectada:</strong> extrapolación lineal del ritmo de citas de los últimos 30 días. Es una estimación, no una previsión ajustada por estacionalidad.

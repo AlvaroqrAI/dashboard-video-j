@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { DEMO_MODE } from '@/lib/demo'
 
 interface Appointment {
   id: string
@@ -106,8 +107,8 @@ export default function Calendar() {
       .then(({ data }) => setRawAppts((data ?? []) as Appointment[]))
   }, [user])
 
-  const appts = rawAppts.length > 0 ? rawAppts : DEMO_APPTS
-  const isDemo = rawAppts.length === 0
+  const isDemo = DEMO_MODE && rawAppts.length === 0
+  const appts = isDemo ? DEMO_APPTS : rawAppts
 
   // Calendar grid
   const year = current.getFullYear()

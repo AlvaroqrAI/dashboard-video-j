@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { PageHeader, Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { DEMO_MODE } from '@/lib/demo'
 
 interface ServiceRow {
   id: string
@@ -58,8 +59,8 @@ export default function Services() {
       })
   }, [user])
 
-  const services = rawServices.length > 0 ? rawServices : DEMO_SERVICES
-  const isDemo = rawServices.length === 0
+  const isDemo = DEMO_MODE && rawServices.length === 0
+  const services = isDemo ? DEMO_SERVICES : rawServices
 
   const activos = services.filter(s => s.active).length
   const conPresupuesto = services.filter(s => s.requires_quote).length
@@ -115,6 +116,13 @@ export default function Services() {
               </tr>
             </thead>
             <tbody>
+              {!loading && services.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ padding: '28px 12px', textAlign: 'center', color: '#4A4960' }}>
+                    Todavía no hay servicios cargados. Cuando se carguen, el agente los usará para presupuestar y agendar.
+                  </td>
+                </tr>
+              )}
               {services.map(s => (
                 <tr key={s.id}>
                   <td style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', color: '#F1F0F5' }}>{s.name}</td>

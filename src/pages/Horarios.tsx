@@ -4,6 +4,7 @@ import { PageHeader, Card } from '@/components/ui/Card'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { useBusinessHours, isOutOfHours, hourOfDay, isHourOpen } from '@/lib/businessHours'
 
 interface CallRow { start_timestamp: string | null; duration_ms: number | null; call_successful: boolean | null }
 
@@ -14,22 +15,11 @@ function fmtDurationShort(ms: number) {
   return `${Math.floor(totalSec / 60)}m ${totalSec % 60}s`
 }
 
-// Fuera de horario laboral real: L-V 07:00–15:00 (hora de Madrid), fin de semana = fuera.
-// Misma regla que usa Inicio — no la del sombreado del gráfico, que es solo visual (8h–20h).
-function isOutOfHours(ts: string): boolean {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Madrid', weekday: 'short', hour: '2-digit', hour12: false,
-  }).formatToParts(new Date(ts))
-  const weekday = parts.find(p => p.type === 'weekday')?.value ?? ''
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10)
-  if (weekday === 'Sat' || weekday === 'Sun') return true
-  return hour < 7 || hour >= 15
-}
-
 const tooltipStyle = { backgroundColor: '#1E1F2B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#F1F0F5', fontSize: 12 }
 
 export default function Horarios() {
   const { user } = useAuth()
+  const { hours } = useBusinessHours()
   const [calls, setCalls] = useState<CallRow[]>([])
   const [citasCreadas, setCitasCreadas] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -51,16 +41,16 @@ export default function Horarios() {
   const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0 }))
   calls.forEach(c => {
     if (!c.start_timestamp) return
-    hourly[new Date(c.start_timestamp).getHours()].count++
+    hourly[hourOfDay(c.start_timestamp, hours.tz)].count++
   })
-  const chartData = hourly.map(h => ({ label: `${h.hour}h`, count: h.count, dimmed: h.hour < 8 || h.hour >= 20 }))
+  const chartData = hourly.map(h => ({ label: `${h.hour}h`, count: h.count, dimmed: !isHourOpen(h.hour, hours) }))
   const peak = hourly.reduce((best, h) => (h.count > best.count ? h : best), hourly[0])
 
   const withDuration = calls.filter(c => c.duration_ms != null)
   const avgMs = withDuration.length > 0 ? withDuration.reduce((s, c) => s + (c.duration_ms || 0), 0) / withDuration.length : 0
   const withResult = calls.filter(c => c.call_successful != null)
   const resolutionPct = withResult.length > 0 ? Math.round((withResult.filter(c => c.call_successful).length / withResult.length) * 100) : null
-  const fueraHorario = calls.filter(c => c.start_timestamp && isOutOfHours(c.start_timestamp)).length
+  const fueraHorario = calls.filter(c => c.start_timestamp && isOutOfHours(c.start_timestamp, hours)).length
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -84,7 +74,7 @@ export default function Horarios() {
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
           <Card>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5' }}>Volumen por hora del día</div>
-            <div style={{ fontSize: 11, color: '#4A4960', marginTop: 2, marginBottom: 16 }}>Tono atenuado = fuera de horario laboral (antes de 8h / después de 20h)</div>
+            <div style={{ fontSize: 11, color: '#4A4960', marginTop: 2, marginBottom: 16 }}>Tono atenuado = fuera del horario de tu taller (configurable en Ajustes)</div>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>

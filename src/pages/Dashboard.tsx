@@ -3,6 +3,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { DEMO_MODE } from '@/lib/demo'
+import { useBusinessHours, isOutOfHours } from '@/lib/businessHours'
 
 interface CallLog {
   call_id: string
@@ -28,19 +30,6 @@ function fmtTime(ts: string) {
   return new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Fuera de horario: L-V 07:00–15:00 (hora de Madrid). Fin de semana = fuera.
-function isOutOfHours(ts: string): boolean {
-  if (!ts) return false
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Madrid', weekday: 'short', hour: '2-digit', hour12: false,
-  }).formatToParts(new Date(ts))
-  const weekday = parts.find(p => p.type === 'weekday')?.value ?? ''
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10)
-  const isWeekend = weekday === 'Sat' || weekday === 'Sun'
-  if (isWeekend) return true
-  return hour < 7 || hour >= 15
-}
-
 function detectReason(c: CallLog): string {
   if (c.is_appointment) return 'Pedir cita'
   const t = (c.transcript ?? '').toLowerCase()
@@ -57,7 +46,8 @@ const statVal: React.CSSProperties = { fontSize: 23, fontWeight: 600, letterSpac
 const statDelta: React.CSSProperties = { fontSize: 11, color: '#4A4960', marginTop: 6 }
 const statDeltaUp: React.CSSProperties = { ...statDelta, color: '#34D399' }
 
-// Demo data shown when Supabase has no real calls yet
+// Datos de ejemplo: SOLO en modo demo local (VITE_DEMO_MODE). Una cuenta real sin
+// llamadas ve ceros y estados vacíos, nunca cifras inventadas.
 const DEMO_CALLS: CallLog[] = [
   { call_id: 'd1', call_status: 'ended', duration_ms: 180000, start_timestamp: new Date(Date.now() - 3600000).toISOString(), is_appointment: true, is_out_of_hours: false, transcript: 'quiero pedir cita', call_reason: 'Pedir cita', user_sentiment: 'Positive' },
   { call_id: 'd2', call_status: 'ended', duration_ms: 60000, start_timestamp: new Date(Date.now() - 7200000).toISOString(), is_appointment: false, is_out_of_hours: false, transcript: 'consulta general', call_reason: 'Consulta general', user_sentiment: 'Neutral' },
@@ -70,6 +60,7 @@ const DEMO_CALLS: CallLog[] = [
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const tallerName = profile?.full_name || 'Mi taller'
+  const { hours } = useBusinessHours()
   const [rawCalls, setRawCalls] = useState<CallLog[]>([])
   const [citasReales, setCitasReales] = useState(0)
   const [apptDates, setApptDates] = useState<string[]>([])
@@ -112,15 +103,14 @@ export default function Dashboard() {
       .then(({ data }) => setApptDates((data ?? []).map((d: { appointment_date: string }) => d.appointment_date)))
   }, [user, days])
 
-  const calls = rawCalls.length > 0 ? rawCalls : DEMO_CALLS
-  const isDemo = rawCalls.length === 0
-
+  const isDemo = DEMO_MODE && rawCalls.length === 0
+  const calls = isDemo ? DEMO_CALLS : rawCalls
 
   // KPIs
   const total = calls.length
   const fueraHorario = isDemo
     ? calls.filter(c => c.is_out_of_hours).length
-    : calls.filter(c => isOutOfHours(c.start_timestamp)).length
+    : calls.filter(c => isOutOfHours(c.start_timestamp, hours)).length
   // Citas: en datos reales, contar la tabla appointments; en demo, el flag de las llamadas demo
   const citas = isDemo ? calls.filter(c => c.is_appointment).length : citasReales
   const totalMs = calls.reduce((s, c) => s + (c.duration_ms || 0), 0)
@@ -271,6 +261,9 @@ export default function Dashboard() {
         {/* Motivo de la llamada */}
         <div style={{ ...card }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 16 }}>Motivo de la llamada</div>
+          {reasons.length === 0 && (
+            <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '12px 0' }}>Sin llamadas en este periodo</div>
+          )}
           {reasons.map(([reason, count], i) => {
             const pct = Math.round((count / total) * 100)
             const opacity = Math.max(1 - i * 0.22, 0.3)
@@ -315,6 +308,9 @@ export default function Dashboard() {
         {/* Actividad reciente */}
         <div style={{ ...card, overflow: 'hidden' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#F1F0F5', marginBottom: 12 }}>Actividad reciente</div>
+          {calls.length === 0 && (
+            <div style={{ fontSize: 11, color: '#4A4960', textAlign: 'center', padding: '12px 0' }}>Todavía no hay llamadas</div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {calls.slice(0, 6).map(c => {
               const reason = c.call_reason || detectReason(c)

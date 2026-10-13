@@ -1,10 +1,14 @@
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/auth.ts'
+import { isSignedByOwner } from '../_shared/retellSignature.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const body = await req.json().catch(() => ({}))
+  // Cuerpo en crudo: hace falta byte a byte para verificar la firma de Retell.
+  const raw = await req.text()
+  let body: any = {}
+  try { body = JSON.parse(raw) } catch { /* cuerpo inválido: falla abajo por falta de parámetros */ }
 
   // Retell envía { call: { agent_id, ... }, date, time }
   const agent_id: string | undefined = body?.call?.agent_id
@@ -28,6 +32,12 @@ Deno.serve(async (req) => {
     .single()
 
   if (!agentRow) return json({ available: false, reason: 'Agente no encontrado' }, 404)
+
+  // Solo Retell, firmando con la API key del dueño del agente, puede invocar esta tool.
+  if (!(await isSignedByOwner(req, raw, agentRow.user_id))) {
+    console.warn('[check-availability] firma de Retell ausente o inválida', { agent_id })
+    return json({ available: false, reason: 'No autorizado' }, 401)
+  }
 
   const { data: profile } = await admin
     .from('profiles')

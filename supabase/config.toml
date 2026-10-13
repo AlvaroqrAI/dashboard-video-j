@@ -48,3 +48,8 @@ verify_jwt = false
 
 [functions.book-appointment]
 verify_jwt = false
+
+# Tool de Retell para consultar el estado de reparación (sin JWT). Igual que las
+# dos anteriores, la autenticidad se valida por la firma X-Retell-Signature.
+[functions.consultar-estado-reparacion]
+verify_jwt = false

@@ -1,5 +1,6 @@
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/auth.ts'
+import { isSignedByOwner } from '../_shared/retellSignature.ts'
 
 const STATUS_MESSAGE: Record<string, string> = {
   recibido: 'Hemos recibido tu coche y está pendiente de diagnóstico.',
@@ -12,7 +13,10 @@ const STATUS_MESSAGE: Record<string, string> = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
-  const body = await req.json().catch(() => ({}))
+  // Cuerpo en crudo: hace falta byte a byte para verificar la firma de Retell.
+  const raw = await req.text()
+  let body: any = {}
+  try { body = JSON.parse(raw) } catch { /* cuerpo inválido: falla abajo por falta de parámetros */ }
 
   // Retell envía { call: { agent_id }, plate?, client_phone? } — el agente pasa
   // lo que tenga: matrícula si la dice el cliente, o el teléfono de la llamada.
@@ -37,6 +41,12 @@ Deno.serve(async (req) => {
     .single()
 
   if (!agentRow) return json({ found: false, message: 'Agente no encontrado' }, 404)
+
+  // Solo Retell, firmando con la API key del dueño del agente, puede invocar esta tool.
+  if (!(await isSignedByOwner(req, raw, agentRow.user_id))) {
+    console.warn('[consultar-estado-reparacion] firma de Retell ausente o inválida', { agent_id })
+    return json({ found: false, message: 'No autorizado' }, 401)
+  }
 
   let vehicleQuery = admin.from('vehicles').select('id, plate, car_model, client_name').eq('user_id', agentRow.user_id)
   vehicleQuery = plate ? vehicleQuery.eq('plate', plate) : vehicleQuery.eq('client_phone', client_phone!)

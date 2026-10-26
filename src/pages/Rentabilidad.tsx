@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { DEMO_MODE } from '@/lib/demo'
 import { useBusinessHours, isApptOutOfHours, isOutOfHours } from '@/lib/businessHours'
-import { PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL, LLAMADAS_MENSUAL_ESTIMADO, GANANCIA_POR_LLAMADA_FUERA } from '@/lib/constants'
+import { PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL, LLAMADAS_MENSUAL_ESTIMADO, GANANCIA_POR_LLAMADA_FUERA, CONVERSION_FUERA_HORARIO } from '@/lib/constants'
 
 interface ApptForRoi {
   appointment_date: string // yyyy-mm-dd
@@ -100,7 +100,7 @@ export default function Rentabilidad() {
   const fueraLlamadas = isDemo
     ? appts.filter(a => isApptOutOfHours(a.appointment_date, a.appointment_time, hours)).length
     : callTimes.filter(ts => ts && isOutOfHours(ts, hours)).length
-  const valorFueraHorario = fueraLlamadas * GANANCIA_POR_LLAMADA_FUERA
+  const valorFueraHorario = fueraLlamadas * CONVERSION_FUERA_HORARIO * GANANCIA_POR_LLAMADA_FUERA
   // Coste real del servicio: cuota + llamadas estimadas (las llamadas se facturan aparte).
   const costeMensualMecania = planPrice + LLAMADAS_MENSUAL_ESTIMADO
   const costeAnualMecania = costeMensualMecania * 12
@@ -160,7 +160,7 @@ export default function Rentabilidad() {
         <div style={statBox}>
           <div style={statLabel}>Recuperado fuera de horario</div>
           <div style={statVal}>{fmtEUR(valorFueraHorario)}</div>
-          <div style={statDelta}>{fueraLlamadas} llamadas con el taller cerrado (30 días)</div>
+          <div style={statDelta}>{fueraLlamadas} llamadas con el taller cerrado · 50% en trabajo</div>
         </div>
         <div style={statBox}>
           <div style={statLabel}>Coste por cita conseguida</div>
@@ -206,10 +206,10 @@ export default function Rentabilidad() {
               <strong style={{ color: '#F1F0F5' }}>Ahorro anual:</strong> coste medio de una recepcionista a jornada completa en España (27.000 €/año) menos el coste anual de MecanIA: tu cuota ({planPrice} €/mes) más las llamadas, estimadas en unos {LLAMADAS_MENSUAL_ESTIMADO} €/mes ({fmtEUR(costeAnualMecania)} al año en total).
             </div>
             <div>
-              <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> llamadas de los últimos 30 días que entraron con el taller cerrado (según el horario de Ajustes) × {GANANCIA_POR_LLAMADA_FUERA} € de ganancia media por trabajo.
+              <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> llamadas de los últimos 30 días que entraron con el taller cerrado (según el horario de Ajustes). Estimamos que la mitad acaba en trabajo, a {GANANCIA_POR_LLAMADA_FUERA} € de ganancia media cada uno.
             </div>
             <div>
-              <strong style={{ color: '#F1F0F5' }}>Facturación proyectada:</strong> ahorro anual ({fmtEUR(ahorroAnual)}) más lo recuperado fuera de horario durante 12 meses ({fueraLlamadas} llamadas × 12 × {GANANCIA_POR_LLAMADA_FUERA} € = {fmtEUR(valorFueraHorario * 12)}).
+              <strong style={{ color: '#F1F0F5' }}>Facturación proyectada:</strong> ahorro anual ({fmtEUR(ahorroAnual)}) más lo recuperado fuera de horario durante 12 meses ({fueraLlamadas * 12} llamadas al año, {Math.round(fueraLlamadas * 12 * CONVERSION_FUERA_HORARIO)} trabajos × {GANANCIA_POR_LLAMADA_FUERA} € = {fmtEUR(valorFueraHorario * 12)}).
             </div>
           </div>
         </Card>

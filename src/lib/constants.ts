@@ -24,3 +24,6 @@ export const LLAMADAS_MENSUAL_ESTIMADO = 200
 // Ganancia media de un trabajo de taller: valor de cada llamada atendida fuera de
 // horario (cliente que sin Sara se habría ido a otro taller).
 export const GANANCIA_POR_LLAMADA_FUERA = 200
+
+// Parte de esas llamadas que acaba en trabajo para el taller (estimación conservadora).
+export const CONVERSION_FUERA_HORARIO = 0.5

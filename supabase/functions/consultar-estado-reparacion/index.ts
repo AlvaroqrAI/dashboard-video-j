@@ -47,8 +47,9 @@ Deno.serve(async (req) => {
   // titular verifican que quien pregunta es el dueño, antes de dar el estado.
   const agent_id: string | undefined = body?.call?.agent_id
   const caller_phone: string | undefined = body?.call?.from_number
-  const client_name: string | undefined = body?.client_name
-  const plate: string | undefined = body?.plate ? String(body.plate).toUpperCase().replace(/[\s-]/g, '') : undefined
+  const args = body?.args ?? body
+  const client_name: string | undefined = args?.client_name
+  const plate: string | undefined = args?.plate ? String(args.plate).toUpperCase().replace(/[\s-]/g, '') : undefined
 
   console.log('[consultar-estado-reparacion]', { agent_id, plate, has_caller: !!caller_phone, has_name: !!client_name })
 
@@ -74,12 +75,14 @@ Deno.serve(async (req) => {
     return json({ found: false, message: 'No autorizado' }, 401)
   }
 
-  const { data: vehicle } = await admin
+  // En el panel la matrícula puede estar guardada con espacio ("2622 LMN"):
+  // se compara sin espacios ni guiones.
+  const { data: vehicles } = await admin
     .from('vehicles')
     .select('id, plate, car_model, client_name, client_phone')
     .eq('user_id', agentRow.user_id)
-    .eq('plate', plate)
-    .maybeSingle()
+    .ilike('plate', `%${plate.slice(-3)}%`)
+  const vehicle = (vehicles ?? []).find((v) => v.plate.toUpperCase().replace(/[\s-]/g, '') === plate) ?? null
 
   if (!vehicle) {
     return json({ found: false, message: 'No encuentro ningún coche con esa matrícula en el sistema.' })

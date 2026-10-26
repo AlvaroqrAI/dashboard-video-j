@@ -75,12 +75,16 @@ export async function retellKeyForUser(userId: string): Promise<string | null> {
 // firma de Retell válida para la cuenta del dueño del agente. Sin esto,
 // cualquiera que conociera un agent_id podía crear citas o leer el estado de
 // reparación (nombre, coche) de los clientes del taller.
+//
+// La key es la del cliente (retell_integrations) si la tiene guardada; si no,
+// la de la cuenta de Retell de MecanIA (secreto RETELL_API_KEY), que es donde
+// viven hoy los agentes de todos los talleres.
 export async function isSignedByOwner(
   req: Request,
   rawBody: string,
   userId: string,
 ): Promise<boolean> {
-  const apiKey = await retellKeyForUser(userId)
+  const apiKey = (await retellKeyForUser(userId)) ?? Deno.env.get('RETELL_API_KEY') ?? null
   const verdict = await verifyRetellSignature(rawBody, apiKey, req.headers.get('x-retell-signature'))
   return verdict === 'valid'
 }

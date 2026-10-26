@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { PageHeader, Card } from '@/components/ui/Card'
 import { SkeletonStatRow, SkeletonTableRows } from '@/components/ui/Skeleton'
-import { supabase, invokeFunction } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 
@@ -86,24 +86,9 @@ export default function Reparaciones() {
       showToast('No se pudo actualizar el estado', 'error')
       return
     }
-    if (newStatus === 'listo' && !repair.sms_sent_at && repair.vehicle?.client_phone) {
-      const v = repair.vehicle
-      const msg = `Hola${v.client_name ? ' ' + v.client_name : ''}, tu ${v.car_model || 'vehículo'} (matrícula ${v.plate}) ya está listo para recoger. ¡Te esperamos!`
-      try {
-        const res = await invokeFunction<{ sent: boolean; reason?: string }>('send-sms', { to: v.client_phone, message: msg })
-        if (res.sent) {
-          await supabase.from('repairs').update({ sms_sent_at: new Date().toISOString() }).eq('id', repair.id)
-          setRepairs(rs => rs.map(r => r.id === repair.id ? { ...r, sms_sent_at: new Date().toISOString() } : r))
-          showToast('Estado actualizado y SMS enviado al cliente')
-        } else {
-          showToast('Estado actualizado — el envío de SMS todavía no está conectado')
-        }
-      } catch {
-        showToast('Estado actualizado — el envío de SMS todavía no está conectado')
-      }
-    } else {
-      showToast(`Movido a "${STATUS_LABEL[newStatus]}"`)
-    }
+    // El aviso por SMS al marcar "listo" queda fuera hasta tener proveedor de SMS
+    // (la función send-sms aún no envía nada).
+    showToast(`Movido a "${STATUS_LABEL[newStatus]}"`)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -141,7 +126,7 @@ export default function Reparaciones() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHeader
         title="Reparaciones"
-        subtitle="Estado de cada vehículo — el agente lo consulta si el cliente pregunta, y se avisa por SMS cuando está listo."
+        subtitle="Estado de cada vehículo — el agente lo consulta si el cliente pregunta."
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, color: '#F1F0F5', cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -174,7 +159,7 @@ export default function Reparaciones() {
             <div style={statBox}>
               <div style={statLabel}>Listas para recoger</div>
               <div style={{ ...statVal, color: counts.listas > 0 ? '#34D399' : '#F1F0F5' }}>{counts.listas}</div>
-              <div style={statDelta}>Cliente avisado por SMS</div>
+              <div style={statDelta}>Pendientes de que el cliente las recoja</div>
             </div>
             <div style={statBox}>
               <div style={statLabel}>Entregadas</div>

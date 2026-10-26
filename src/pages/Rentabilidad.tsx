@@ -4,8 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { DEMO_MODE } from '@/lib/demo'
-import { useBusinessHours, isApptOutOfHours } from '@/lib/businessHours'
-import { TICKET_MEDIO, PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL, LLAMADAS_MENSUAL_ESTIMADO } from '@/lib/constants'
+import { useBusinessHours, isApptOutOfHours, isOutOfHours } from '@/lib/businessHours'
+import { PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL, LLAMADAS_MENSUAL_ESTIMADO, GANANCIA_POR_LLAMADA_FUERA } from '@/lib/constants'
 
 interface ApptForRoi {
   appointment_date: string // yyyy-mm-dd
@@ -44,6 +44,7 @@ export default function Rentabilidad() {
   const [rawAppts, setRawAppts] = useState<ApptForRoi[]>([])
   const [loading, setLoading] = useState(true)
   const [planPrice, setPlanPrice] = useState<number>(PLAN_MENSUAL)
+  const [callTimes, setCallTimes] = useState<string[]>([])
 
   useEffect(() => {
     if (!user) return
@@ -59,6 +60,14 @@ export default function Rentabilidad() {
         setRawAppts((data ?? []) as ApptForRoi[])
         setLoading(false)
       })
+
+    // Llamadas que entraron con el taller cerrado (mismo criterio que Horarios).
+    supabase
+      .from('call_logs')
+      .select('start_timestamp')
+      .eq('user_id', user.id)
+      .gte('start_timestamp', new Date(Date.now() - 30 * 86400000).toISOString())
+      .then(({ data }) => setCallTimes((data ?? []).map(c => c.start_timestamp as string)))
 
     // Consulta aislada a propósito: si la columna plan_price aún no existe en Supabase
     // (migración 0010 sin aplicar todavía), esto falla en silencio y usamos el valor
@@ -86,15 +95,19 @@ export default function Rentabilidad() {
   const appts = isDemo ? DEMO_APPTS : rawAppts
 
   const citas = appts.length
-  const ingresoMensual = citas * TICKET_MEDIO
-  const fueraCitas = appts.filter(a => isApptOutOfHours(a.appointment_date, a.appointment_time, hours)).length
-  const valorFueraHorario = fueraCitas * TICKET_MEDIO
+  // Cada llamada atendida con el taller cerrado es un cliente que, sin Sara, se
+  // habría perdido: se valora por la ganancia media de un trabajo.
+  const fueraLlamadas = isDemo
+    ? appts.filter(a => isApptOutOfHours(a.appointment_date, a.appointment_time, hours)).length
+    : callTimes.filter(ts => ts && isOutOfHours(ts, hours)).length
+  const valorFueraHorario = fueraLlamadas * GANANCIA_POR_LLAMADA_FUERA
   // Coste real del servicio: cuota + llamadas estimadas (las llamadas se facturan aparte).
   const costeMensualMecania = planPrice + LLAMADAS_MENSUAL_ESTIMADO
   const costeAnualMecania = costeMensualMecania * 12
   const costePorCita = citas > 0 ? costeMensualMecania / citas : null
   const ahorroAnual = COSTE_SECRETARIA_ANUAL - costeAnualMecania
-  const proyeccion12 = ingresoMensual * 12
+  // Ahorro frente a la secretaria + lo recuperado fuera de horario a 12 meses.
+  const proyeccion12 = ahorroAnual + valorFueraHorario * 12
 
   const comparativa = [
     { label: 'Coste anual', secretaria: fmtEUR(COSTE_SECRETARIA_ANUAL), mecania: fmtEUR(costeAnualMecania) },
@@ -147,7 +160,7 @@ export default function Rentabilidad() {
         <div style={statBox}>
           <div style={statLabel}>Recuperado fuera de horario</div>
           <div style={statVal}>{fmtEUR(valorFueraHorario)}</div>
-          <div style={statDelta}>{fueraCitas} citas que se habrían perdido sin 24/7</div>
+          <div style={statDelta}>{fueraLlamadas} llamadas con el taller cerrado (30 días)</div>
         </div>
         <div style={statBox}>
           <div style={statLabel}>Coste por cita conseguida</div>
@@ -157,7 +170,7 @@ export default function Rentabilidad() {
         <div style={{ ...statBox, borderRight: 'none' }}>
           <div style={statLabel}>Facturación proyectada</div>
           <div style={statVal}>{fmtEUR(proyeccion12)}</div>
-          <div style={statDelta}>A 12 meses, extrapolando los últimos 30 días</div>
+          <div style={statDelta}>Ahorro + fuera de horario × 12 meses</div>
         </div>
       </div>
 
@@ -193,10 +206,10 @@ export default function Rentabilidad() {
               <strong style={{ color: '#F1F0F5' }}>Ahorro anual:</strong> coste medio de una recepcionista a jornada completa en España (27.000 €/año) menos el coste anual de MecanIA: tu cuota ({planPrice} €/mes) más las llamadas, estimadas en unos {LLAMADAS_MENSUAL_ESTIMADO} €/mes ({fmtEUR(costeAnualMecania)} al año en total).
             </div>
             <div>
-              <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> citas cerradas por Sara fuera del horario de tu taller (el que defines en Ajustes) × ticket medio ({TICKET_MEDIO} €).
+              <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> llamadas de los últimos 30 días que entraron con el taller cerrado (según el horario de Ajustes) × {GANANCIA_POR_LLAMADA_FUERA} € de ganancia media por trabajo.
             </div>
             <div>
-              <strong style={{ color: '#F1F0F5' }}>Facturación proyectada:</strong> extrapolación lineal del ritmo de citas de los últimos 30 días. Es una estimación, no una previsión ajustada por estacionalidad.
+              <strong style={{ color: '#F1F0F5' }}>Facturación proyectada:</strong> ahorro anual ({fmtEUR(ahorroAnual)}) más lo recuperado fuera de horario durante 12 meses ({fueraLlamadas} llamadas × 12 × {GANANCIA_POR_LLAMADA_FUERA} € = {fmtEUR(valorFueraHorario * 12)}).
             </div>
           </div>
         </Card>

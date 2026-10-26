@@ -20,3 +20,7 @@ export const COSTE_SECRETARIA_ANUAL = 27000
 // se factura aparte de la cuota. Se suma a la cuota para comparar con la
 // secretaria con el coste real del servicio, no solo el de la suscripción.
 export const LLAMADAS_MENSUAL_ESTIMADO = 200
+
+// Ganancia media de un trabajo de taller: valor de cada llamada atendida fuera de
+// horario (cliente que sin Sara se habría ido a otro taller).
+export const GANANCIA_POR_LLAMADA_FUERA = 200

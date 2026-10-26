@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { DEMO_MODE } from '@/lib/demo'
 import { useBusinessHours, isApptOutOfHours } from '@/lib/businessHours'
-import { TICKET_MEDIO, PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL } from '@/lib/constants'
+import { TICKET_MEDIO, PLAN_MENSUAL, COSTE_SECRETARIA_ANUAL, LLAMADAS_MENSUAL_ESTIMADO } from '@/lib/constants'
 
 interface ApptForRoi {
   appointment_date: string // yyyy-mm-dd
@@ -89,12 +89,15 @@ export default function Rentabilidad() {
   const ingresoMensual = citas * TICKET_MEDIO
   const fueraCitas = appts.filter(a => isApptOutOfHours(a.appointment_date, a.appointment_time, hours)).length
   const valorFueraHorario = fueraCitas * TICKET_MEDIO
-  const costePorCita = citas > 0 ? planPrice / citas : null
-  const ahorroAnual = (COSTE_SECRETARIA_ANUAL / 12 - planPrice) * 12
+  // Coste real del servicio: cuota + llamadas estimadas (las llamadas se facturan aparte).
+  const costeMensualMecania = planPrice + LLAMADAS_MENSUAL_ESTIMADO
+  const costeAnualMecania = costeMensualMecania * 12
+  const costePorCita = citas > 0 ? costeMensualMecania / citas : null
+  const ahorroAnual = COSTE_SECRETARIA_ANUAL - costeAnualMecania
   const proyeccion12 = ingresoMensual * 12
 
   const comparativa = [
-    { label: 'Coste anual', secretaria: fmtEUR(COSTE_SECRETARIA_ANUAL), mecania: fmtEUR(planPrice * 12) },
+    { label: 'Coste anual', secretaria: fmtEUR(COSTE_SECRETARIA_ANUAL), mecania: fmtEUR(costeAnualMecania) },
     { label: 'Horario', secretaria: 'L–V, 8h–16h', mecania: '24/7, 365 días' },
     { label: 'Bajas y vacaciones', secretaria: 'Hay que cubrirlas', mecania: 'Nunca' },
     { label: 'Escalar a más talleres', secretaria: 'Contratar y formar', mecania: 'Inmediato' },
@@ -149,7 +152,7 @@ export default function Rentabilidad() {
         <div style={statBox}>
           <div style={statLabel}>Coste por cita conseguida</div>
           <div style={statVal}>{costePorCita !== null ? fmtEUR(costePorCita) : '—'}</div>
-          <div style={statDelta}>Cuota del plan ÷ citas cerradas</div>
+          <div style={statDelta}>Cuota + llamadas ÷ citas cerradas</div>
         </div>
         <div style={{ ...statBox, borderRight: 'none' }}>
           <div style={statLabel}>Facturación proyectada</div>
@@ -187,7 +190,7 @@ export default function Rentabilidad() {
           <div style={{ fontSize: 11.5, color: '#4A4960', marginBottom: 16 }}>Transparencia sobre de dónde salen estos números</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 12, color: '#8B8A99', lineHeight: 1.6 }}>
             <div>
-              <strong style={{ color: '#F1F0F5' }}>Ahorro anual:</strong> coste medio de una recepcionista a jornada completa en España (27.000 €/año) menos tu cuota de MecanIA ({planPrice} €/mes).
+              <strong style={{ color: '#F1F0F5' }}>Ahorro anual:</strong> coste medio de una recepcionista a jornada completa en España (27.000 €/año) menos el coste anual de MecanIA: tu cuota ({planPrice} €/mes) más las llamadas, estimadas en unos {LLAMADAS_MENSUAL_ESTIMADO} €/mes ({fmtEUR(costeAnualMecania)} al año en total).
             </div>
             <div>
               <strong style={{ color: '#F1F0F5' }}>Recuperado fuera de horario:</strong> citas cerradas por Sara fuera del horario de tu taller (el que defines en Ajustes) × ticket medio ({TICKET_MEDIO} €).

@@ -15,3 +15,8 @@ export const PLAN_MENSUAL = 299
 // Coste anual de referencia de una recepcionista a jornada completa en España.
 // Es el argumento de venta ya verificado de MecanIA (ver dossier comercial).
 export const COSTE_SECRETARIA_ANUAL = 27000
+
+// Coste mensual estimado de las llamadas (minutos de la plataforma de voz), que
+// se factura aparte de la cuota. Se suma a la cuota para comparar con la
+// secretaria con el coste real del servicio, no solo el de la suscripción.
+export const LLAMADAS_MENSUAL_ESTIMADO = 200

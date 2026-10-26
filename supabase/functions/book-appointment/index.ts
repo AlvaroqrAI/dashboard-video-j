@@ -1,6 +1,18 @@
+// Tool de Retell: agenda la cita en la agenda del taller (tabla appointments,
+// la que lee el calendario del panel).
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/auth.ts'
-import { isSignedByOwner } from '../_shared/retellSignature.ts'
+import { isAuthorizedTool } from '../_shared/retellSignature.ts'
+import { describeSlot, loadAgenda, parseRequestedSlot, toolArgs } from '../_shared/agenda.ts'
+
+// "+34 637 61 92 76" → "+34637619276". Si no hay 9 cifras, se guarda tal cual.
+function normalizePhone(v: unknown): string | null {
+  if (v == null || v === '') return null
+  const digits = String(v).replace(/\D/g, '')
+  if (digits.length === 9) return `+34${digits}`
+  if (digits.length === 11 && digits.startsWith('34')) return `+${digits}`
+  return String(v)
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -10,18 +22,22 @@ Deno.serve(async (req) => {
   let body: any = {}
   try { body = JSON.parse(raw) } catch { /* cuerpo inválido: falla abajo por falta de parámetros */ }
 
-  // Retell envía { call: { agent_id, call_id, ... }, client_name, client_phone, ... }
+  const args = toolArgs(body)
   const agent_id: string | undefined = body?.call?.agent_id
   const call_id: string | undefined = body?.call?.call_id
-  const { client_name, client_phone, car_model, reason, date, time } = body
+  const { date, time } = parseRequestedSlot(args)
+  const client_name = (args.client_name ?? args.name ?? null) as string | null
+  const client_phone = normalizePhone(args.client_phone ?? args.phone ?? body?.call?.from_number)
+  const car_model = (args.car_model ?? null) as string | null
+  const reason = (args.reason ?? null) as string | null
   // Normalizada (sin espacios/guiones, mayúsculas) para que "1234 BCD" y "1234-bcd"
   // reconozcan el mismo vehículo.
-  const plate: string | undefined = body?.plate ? String(body.plate).toUpperCase().replace(/[\s-]/g, '') : undefined
+  const plate = args.plate ? String(args.plate).toUpperCase().replace(/[\s-]/g, '') : null
 
-  console.log('[book-appointment]', { agent_id, call_id, client_name, date, time })
+  console.log('[book-appointment]', { agent_id, call_id, date, time })
 
   if (!agent_id || !date || !time) {
-    return json({ success: false, reason: `Faltan parámetros: ${JSON.stringify({ agent_id, date, time })}` }, 400)
+    return json({ success: false, reason: 'Faltan el día o la hora de la cita.' }, 400)
   }
 
   const admin = adminClient()
@@ -36,30 +52,38 @@ Deno.serve(async (req) => {
 
   if (!agentRow) return json({ success: false, reason: 'Agente no encontrado' }, 404)
 
-  // Solo Retell, firmando con la API key del dueño del agente, puede invocar esta tool.
-  if (!(await isSignedByOwner(req, raw, agentRow.user_id))) {
-    console.warn('[book-appointment] firma de Retell ausente o inválida', { agent_id })
+  // Solo Retell (firma o cabecera secreta) puede invocar esta tool.
+  if (!(await isAuthorizedTool(req, raw, agentRow.user_id))) {
+    console.warn('[book-appointment] petición no autorizada', { agent_id })
     return json({ success: false, reason: 'No autorizado' }, 401)
   }
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('max_concurrent_appointments')
-    .eq('id', agentRow.user_id)
-    .single()
+  const agenda = await loadAgenda(agentRow.user_id)
+  if (!agenda.isFree(date, time)) {
+    const alternativas = agenda.alternatives(date, time)
+    return json({
+      success: false,
+      reason: `El ${describeSlot(date, time)} no está disponible.`,
+      message: alternativas.length
+        ? `Ese hueco ya no está libre. Huecos más cercanos: ${alternativas.map((a) => a.texto).join('; ')}.`
+        : 'Ese hueco ya no está libre y no hay huecos en los próximos días.',
+      alternativas,
+    })
+  }
 
-  const maxSlots = profile?.max_concurrent_appointments ?? 2
-
-  const { count } = await admin
-    .from('appointments')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', agentRow.user_id)
-    .eq('appointment_date', date)
-    .eq('appointment_time', time)
-    .neq('status', 'cancelled')
-
-  if ((count ?? 0) >= maxSlots) {
-    return json({ success: false, reason: 'No hay disponibilidad en ese horario.' })
+  // La cita apunta a la llamada (FK a call_logs), pero el webhook de Retell solo
+  // guarda la llamada al colgar. Creamos ya la fila mínima; el webhook la completa
+  // después (upsert por call_id) sin pisar is_appointment.
+  if (call_id) {
+    await admin.from('call_logs').upsert({
+      call_id,
+      user_id: agentRow.user_id,
+      agent_id,
+      call_status: 'ongoing',
+      start_timestamp: new Date().toISOString(),
+      from_number: body?.call?.from_number ?? null,
+      is_appointment: true,
+    }, { onConflict: 'call_id', ignoreDuplicates: false })
   }
 
   const { data: appt, error } = await admin
@@ -67,11 +91,12 @@ Deno.serve(async (req) => {
     .insert({
       user_id: agentRow.user_id,
       call_id: call_id ?? null,
-      client_name: client_name ?? null,
-      client_phone: client_phone ?? null,
-      car_model: car_model ?? null,
-      plate: plate ?? null,
-      reason: reason ?? null,
+      client_name,
+      client_phone,
+      car_model,
+      plate,
+      reason,
+      service_name: reason,
       appointment_date: date,
       appointment_time: time,
       status: 'confirmed',
@@ -81,14 +106,7 @@ Deno.serve(async (req) => {
 
   if (error) {
     console.error('[book-appointment]', error.message)
-    return json({ success: false, reason: error.message }, 500)
-  }
-
-  if (call_id) {
-    await admin
-      .from('call_logs')
-      .update({ is_appointment: true })
-      .eq('call_id', call_id)
+    return json({ success: false, reason: 'No se pudo guardar la cita.' }, 500)
   }
 
   // Reconocimiento de vehículo: si hay matrícula, guarda/actualiza el registro
@@ -99,9 +117,9 @@ Deno.serve(async (req) => {
       .upsert({
         user_id: agentRow.user_id,
         plate,
-        car_model: car_model ?? null,
-        client_name: client_name ?? null,
-        client_phone: client_phone ?? null,
+        car_model,
+        client_name,
+        client_phone,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,plate' })
   }
@@ -109,6 +127,6 @@ Deno.serve(async (req) => {
   return json({
     success: true,
     appointment_id: appt.id,
-    message: `Cita confirmada para el ${date} a las ${time}. ¡Hasta pronto!`,
+    message: `Cita confirmada para el ${describeSlot(date, time)}.`,
   })
 })

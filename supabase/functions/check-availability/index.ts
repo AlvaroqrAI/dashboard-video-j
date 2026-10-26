@@ -1,6 +1,11 @@
+// Tool de Retell: ¿hay hueco en la agenda del taller?
+// Recibe la fecha y hora que pide el cliente (date + time, o start_time ISO) y
+// responde si está libre y, siempre, hasta 3 alternativas cercanas para que el
+// agente pueda ofrecerlas sin volver a preguntar.
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/auth.ts'
-import { isSignedByOwner } from '../_shared/retellSignature.ts'
+import { isAuthorizedTool } from '../_shared/retellSignature.ts'
+import { describeSlot, loadAgenda, parseRequestedSlot, toolArgs } from '../_shared/agenda.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -10,20 +15,16 @@ Deno.serve(async (req) => {
   let body: any = {}
   try { body = JSON.parse(raw) } catch { /* cuerpo inválido: falla abajo por falta de parámetros */ }
 
-  // Retell envía { call: { agent_id, ... }, date, time }
   const agent_id: string | undefined = body?.call?.agent_id
-  const date: string | undefined = body?.date
-  const time: string | undefined = body?.time
+  const { date, time } = parseRequestedSlot(toolArgs(body))
 
   console.log('[check-availability]', { agent_id, date, time })
 
-  if (!agent_id || !date || !time) {
-    return json({ available: false, reason: `Faltan parámetros: ${JSON.stringify({ agent_id, date, time })}` }, 400)
+  if (!agent_id || !date) {
+    return json({ available: false, reason: 'Falta el día que quiere el cliente.' }, 400)
   }
 
-  const admin = adminClient()
-
-  const { data: agentRow } = await admin
+  const { data: agentRow } = await adminClient()
     .from('agents')
     .select('user_id')
     .eq('retell_agent_id', agent_id)
@@ -33,38 +34,36 @@ Deno.serve(async (req) => {
 
   if (!agentRow) return json({ available: false, reason: 'Agente no encontrado' }, 404)
 
-  // Solo Retell, firmando con la API key del dueño del agente, puede invocar esta tool.
-  if (!(await isSignedByOwner(req, raw, agentRow.user_id))) {
-    console.warn('[check-availability] firma de Retell ausente o inválida', { agent_id })
+  // Solo Retell (firma o cabecera secreta) puede invocar esta tool.
+  if (!(await isAuthorizedTool(req, raw, agentRow.user_id))) {
+    console.warn('[check-availability] petición no autorizada', { agent_id })
     return json({ available: false, reason: 'No autorizado' }, 401)
   }
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('max_concurrent_appointments')
-    .eq('id', agentRow.user_id)
-    .single()
+  const agenda = await loadAgenda(agentRow.user_id)
+  const alternativas = agenda.alternatives(date, time)
 
-  const maxSlots = profile?.max_concurrent_appointments ?? 2
+  if (time && agenda.isFree(date, time)) {
+    return json({
+      available: true,
+      date, time,
+      message: `Hay hueco el ${describeSlot(date, time)}.`,
+      alternativas,
+    })
+  }
 
-  const { count } = await admin
-    .from('appointments')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', agentRow.user_id)
-    .eq('appointment_date', date)
-    .eq('appointment_time', time)
-    .neq('status', 'cancelled')
-
-  const booked = count ?? 0
-  const available = booked < maxSlots
+  const motivo = !time
+    ? 'Estos son los primeros huecos libres.'
+    : agenda.isOpenSlot(date, time)
+      ? `El ${describeSlot(date, time)} ya está completo.`
+      : `El ${describeSlot(date, time)} el taller está cerrado o es demasiado pronto.`
 
   return json({
-    available,
-    booked,
-    max_slots: maxSlots,
-    slots_left: Math.max(0, maxSlots - booked),
-    message: available
-      ? `Hay disponibilidad el ${date} a las ${time}.`
-      : `No hay disponibilidad el ${date} a las ${time}. Quedan 0 huecos.`,
+    available: false,
+    date, time: time ?? null,
+    message: alternativas.length
+      ? `${motivo} Huecos más cercanos: ${alternativas.map((a) => a.texto).join('; ')}.`
+      : `${motivo} No hay huecos libres en los próximos días.`,
+    alternativas,
   })
 })

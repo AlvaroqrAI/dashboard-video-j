@@ -88,3 +88,22 @@ export async function isSignedByOwner(
   const verdict = await verifyRetellSignature(rawBody, apiKey, req.headers.get('x-retell-signature'))
   return verdict === 'valid'
 }
+
+// Autorización de las tools: firma de Retell válida, o la cabecera
+// X-Mecania-Token con el secreto MECANIA_TOOLS_TOKEN (configurada en la tool de
+// Retell). La cabecera es la vía que no depende de que Retell firme las
+// peticiones de las custom functions.
+export async function isAuthorizedTool(
+  req: Request,
+  rawBody: string,
+  userId: string,
+): Promise<boolean> {
+  const expected = Deno.env.get('MECANIA_TOOLS_TOKEN')
+  const given = req.headers.get('x-mecania-token')
+  if (expected && given && given.length === expected.length) {
+    let diff = 0
+    for (let i = 0; i < given.length; i++) diff |= given.charCodeAt(i) ^ expected.charCodeAt(i)
+    if (diff === 0) return true
+  }
+  return await isSignedByOwner(req, rawBody, userId)
+}

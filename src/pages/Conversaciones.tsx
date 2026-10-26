@@ -27,7 +27,7 @@ export default function Conversaciones() {
 
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', opacity: 0.5 }}>
           <div style={{ fontSize: 10, color: '#4A4960', marginBottom: 6 }}>Lanzamiento previsto</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#F1F0F5' }}>Finales de septiembre</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#F1F0F5' }}>Principios de enero de 2027</div>
         </div>
       </Card>
     </div>
